@@ -1,0 +1,239 @@
+<?xml version="1.0"?>
+<s:WindowedApplication
+    xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    width="1024" height="800"
+    backgroundAlpha="0.0"
+    contentBackgroundAlpha="0.0"
+    creationComplete="{init(event)}"
+    addedToStage="{addedToStageHandler(event)}">
+
+    <fx:Script>
+        <![CDATA[
+            import com.okapp.pirates.ui.controls.Canvas;
+
+            import feathers.themes.MetalWorksMobileTheme;
+
+            import mx.collections.ArrayCollection;
+            import mx.core.Application;
+            import mx.events.FlexEvent;
+            import mx.events.ListEvent;
+            import mx.events.ResizeEvent;
+
+            import org.kolonitsky.alexey.StoredFieldManager;
+            import org.kolonitsky.alexey.debug.DebugWrapper;
+
+            import org.okapp.guieditor.model.ComponentVO;
+            import org.okapp.guieditor.model.GUIVO;
+
+            import spark.components.Application;
+            import spark.events.TextOperationEvent;
+
+            import starling.core.Starling;
+            import starling.display.Sprite;
+            import starling.display.Quad;
+            import starling.events.Event;
+            import starling.utils.Color;
+
+            [Bindable]
+            public var components:ArrayCollection = new ArrayCollection();
+
+            [Bindalbe]
+            public var openFiles:ArrayCollection = new ArrayCollection();
+
+            [Bindable]
+            public var selectedFile:GUIVO = null;
+
+            [Bindable]
+            public var GUI_FILE_TYPE:Array = ["*.xml"];
+
+            private var so:StoredFieldManager = StoredFieldManager.instance;
+            private var _starling:Starling;
+            private var _preview:com.okapp.pirates.ui.controls.Canvas;
+
+            private function init(event:FlexEvent):void
+            {
+                so.initialize(Constants.APPLICATION_NAME);
+//                fsTreeComponents.selectedPath = so.getString(Constants.SO_COMPONENTS_PATH);
+//                fsTreeComponents_changeHandler(null);
+
+                fsTreeXML.selectedPath = so.getString(Constants.SO_XML_PATH);
+                tfTreeXML_changeHandler(null);
+
+                if(selectedFile && selectedFile.file)
+                {
+                    var p:File = selectedFile.file.parent;
+                    var paths:Array = [];
+                    while(p != null)
+                    {
+                        paths.unshift(p.nativePath);
+                        p = p.parent;
+                    }
+
+                    fsTreeXML.openPaths = paths;
+                }
+
+                fsTreeXML.selectedPath = so.getString(Constants.SO_XML_PATH);
+            }
+
+            private function starling_rootCreatedHandler(event:starling.events.Event):void
+            {
+                new MetalWorksMobileTheme();
+
+                _preview = new com.okapp.pirates.ui.controls.Canvas();
+                _preview.x = 300;
+                _preview.y = 30;
+                _starling.stage.addChild(_preview);
+
+                if (_preview && selectedFile)
+                    _preview.createAllElements(selectedFile.buffer);
+
+            }
+
+            private function fsTreeComponents_changeHandler(event:ListEvent):void
+            {
+//                if(!isClassDirectory(fsTreeComponents.selectedPath))
+//                    return;
+//
+//                so.setString(Constants.SO_COMPONENTS_PATH, fsTreeComponents.selectedPath);
+            }
+
+            private function tfTreeXML_changeHandler(event:ListEvent):void
+            {
+                var path:String = fsTreeXML.selectedPath;
+                if(!path)
+                    return;
+
+                var file:File = new File(fsTreeXML.selectedPath);
+                if(file.isDirectory)
+                    return;
+
+                var newFile:GUIVO = new GUIVO(file);
+                if(newFile.isGUIFile)
+                {
+                    selectedFile = newFile;
+                    openFiles.addItem(selectedFile);
+
+                    so.setString(Constants.SO_XML_PATH, fsTreeXML.selectedPath);
+
+                    editor.text = selectedFile.buffer.toXMLString();
+
+                    if(_preview && selectedFile)
+                    {
+                        _preview.clearAllElements();
+                        _preview.createAllElements(selectedFile.buffer);
+                    }
+                }
+            }
+
+            private function listComponent_doubleClickHandler(event:MouseEvent):void
+            {
+                if(_preview && selectedFile)
+                {
+                    _preview.clearAllElements();
+                    _preview.createAllElements(selectedFile.buffer);
+                }
+            }
+
+            private function isClassDirectory(path:String):Boolean
+            {
+                if(path == null || path == "")
+                    return false;
+
+                var file:File = new File(path);
+                if(!file.isDirectory)
+                    return false;
+
+                var result:Boolean = false;
+                var files:Array /* of File */ = file.getDirectoryListing();
+                if(files.length)
+                {
+                    components.removeAll();
+                    for each (var componentFile:File in files)
+                    {
+                        var item:ComponentVO = new ComponentVO(componentFile);
+                        if(!item.isComponentFile())
+                            continue;
+
+                        result = true;
+                        components.addItem(item);
+                    }
+                }
+
+                return result;
+            }
+
+            private function canvas_resizeHandler(event:ResizeEvent):void
+            {
+                trace("GUIEditor canvas_resizeHandler ");
+            }
+
+            private function addedToStageHandler(event:flash.events.Event):void
+            {
+                Starling.multitouchEnabled = true;
+
+                _starling = new Starling(starling.display.Sprite, stage);
+                _starling.antiAliasing = 1;
+                _starling.start();
+                _starling.addEventListener(starling.events.Event.ROOT_CREATED, starling_rootCreatedHandler);
+            }
+
+            private function editor_changeHandler(event:TextOperationEvent):void
+            {
+                var xml:XML = new XML(editor.text);
+                if(xml == null)
+                {
+                    editor.errorString = "Invalid XML";
+                    return;
+                }
+                else
+                {
+                    editor.errorString = "";
+                }
+
+                selectedFile.buffer = xml;
+                selectedFile.flush();
+
+                if(_preview && selectedFile)
+                {
+                    _preview.clearAllElements();
+                    _preview.createAllElements(selectedFile.buffer);
+                }
+            }
+
+        ]]>
+    </fx:Script>
+
+    <s:VGroup left="4" top="4" bottom="4" width="300" >
+        <s:Label text="XML Directory" width="100%" />
+        <mx:FileSystemTree id="fsTreeXML" width="100%" height="100%" change="tfTreeXML_changeHandler(event)"/>
+    </s:VGroup>
+
+    <!--
+        <mx:HDividedBox top="10" left="10" right="10" bottom="10" backgroundAlpha="0.3" backgroundColor="#ffb74d">
+
+        <s:VGroup width="200" height="100%" paddingTop="4">
+            <s:Label text="Components Directory" width="100%"/>
+            <mx:FileSystemTree id="fsTreeComponents" width="100%" height="100%" change="fsTreeComponents_changeHandler(event)"
+                enumerationMode="directoriesOnly"/>
+        </s:VGroup>
+
+        <s:VGroup width="120" height="100%" paddingTop="4">
+            <s:Label text="Components" width="100%"/>
+            <s:List id="listComponent" width="100%" height="100%" doubleClickEnabled="true" doubleClick="listComponent_doubleClickHandler(event)"
+                dataProvider="{components}"/>
+        </s:VGroup> -->
+
+    <s:Group top="4" right="4" bottom="4" left="308">
+        <s:HGroup top="0" left="0" right="0" height="20">
+            <s:Label text="Preview" width="100%"/>
+            <s:ButtonBar id="filesReference" />
+        </s:HGroup>
+
+        <s:TextArea id="editor" top="600" right="0" bottom="0" left="0" change="editor_changeHandler(event)" />
+    </s:Group>
+
+    <!-- </mx:HDividedBox> -->
+
+</s:WindowedApplication>
