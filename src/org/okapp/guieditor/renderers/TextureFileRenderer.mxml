@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!--
+  Created by Alexey on 10/19/2014.
+-->
+<s:ItemRenderer
+    xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    autoDrawBackground="true">
+
+    <fx:Script>
+        <![CDATA[
+            import org.okapp.guieditor.model.AnimationTexture;
+
+            override public function set data(value:Object):void
+            {
+                super.data = value;
+
+                var file:AnimationTexture = value as AnimationTexture;
+
+                if (file)
+                    labelDisplay.text = file.name;
+                else
+                    labelDisplay.text = "";
+            }
+        ]]>
+    </fx:Script>
+
+    <s:states>
+        <s:State name="normal"/>
+        <s:State name="hovered"/>
+    </s:states>
+
+
+    <s:Label id="labelDisplay"
+        verticalCenter="0"
+        left="3" right="3" top="6" bottom="4"
+        fontSize.hovered='14' fontStyle.hovered="italic"/>
+
+</s:ItemRenderer>

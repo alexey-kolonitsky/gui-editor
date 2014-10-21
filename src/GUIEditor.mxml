@@ -37,7 +37,7 @@
             private var starlingStage:Starling;
 
             [Bindable]
-            private var tabCollectin:ArrayCollection = new ArrayCollection([SCREEN_LAYOUT, SCREEN_ANIMATION]);
+            private var tabCollection:ArrayCollection = new ArrayCollection([SCREEN_LAYOUT, SCREEN_ANIMATION]);
 
             override protected function initializationComplete ():void
             {
@@ -60,10 +60,13 @@
             private function starling_rootCreatedHandler (event:starling.events.Event):void
             {
                 new MetalWorksMobileTheme();
+
+                if (currentScreen)
+                    currentScreen.starling = starlingStage;
             }
 
             private var screens:Dictionary = new Dictionary();
-            private var currentScreen:Group;
+            private var currentScreen:BaseScreen;
 
             private function tabs_changeHandler (event:IndexChangeEvent):void
             {
@@ -72,6 +75,8 @@
                 var key:String = listTabs.selectedItem as String;
                 if (! (key in screens) || screens[key] == null)
                     screens[key] = createScreen(key);
+
+                StoredFieldManager.instance.setString(Constants.SO_SELECTED_SCREEN, key);
 
                 currentScreen = screens[key];
                 addElement(currentScreen);
@@ -83,17 +88,17 @@
 
                 switch (key)
                 {
-                case SCREEN_ANIMATION:
-                    result = new AnimationScreen();
-                    break;
+                    case SCREEN_ANIMATION:
+                        result = new AnimationScreen();
+                        break;
 
-                case SCREEN_LAYOUT:
-                    result = new LayoutScreen();
-                    break;
+                    case SCREEN_LAYOUT:
+                        result = new LayoutScreen();
+                        break;
 
-                default:
-                    trace("WARNING: createScreen. Unexpected screen id: " + key);
-                    break;
+                    default:
+                        trace("WARNING: createScreen. Unexpected screen id: " + key);
+                        break;
                 }
 
                 result.left = 48;
@@ -106,10 +111,13 @@
 
             private function creationCompleteHandler (event:FlexEvent):void
             {
-                var key:String = listTabs.selectedItem;
-                screens[key] = createScreen(key);
+                var key:String = StoredFieldManager.instance.getString(Constants.SO_SELECTED_SCREEN);
+                if (key != null)
+                    listTabs.selectedItem = key;
+                else
+                    key = listTabs.selectedItem;
 
-                currentScreen = screens[key];
+                currentScreen = screens[key] = createScreen(key);
                 addElement(currentScreen);
             }
         ]]>
@@ -117,7 +125,7 @@
 
     <s:List id="listTabs"
         left="4" top="4" bottom="4" width="40"
-        dataProvider="{tabCollectin}"
+        dataProvider="{tabCollection}"
         selectedIndex="0"
         change="{tabs_changeHandler(event)}"/>
 

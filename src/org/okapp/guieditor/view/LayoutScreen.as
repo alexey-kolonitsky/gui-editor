@@ -4,7 +4,12 @@ package org.okapp.guieditor.view
 
     import feathers.system.DeviceCapabilities;
 
+    import flash.events.MouseEvent;
+
     import flash.filesystem.File;
+    import flash.filesystem.FileMode;
+    import flash.filesystem.FileStream;
+    import flash.utils.ByteArray;
 
     import mx.collections.ArrayCollection;
     import mx.controls.FileSystemTree;
@@ -12,12 +17,16 @@ package org.okapp.guieditor.view
     import mx.events.ListEvent;
 
     import org.kolonitsky.alexey.StoredFieldManager;
+    import org.okapp.guieditor.model.DataFile;
 
     import org.okapp.guieditor.model.GUIVO;
+
+    import spark.components.Button;
 
     import spark.components.Group;
     import spark.components.Label;
     import spark.components.TextArea;
+    import spark.components.TextInput;
     import spark.events.TextOperationEvent;
 
     import starling.core.Starling;
@@ -62,22 +71,16 @@ package org.okapp.guieditor.view
         }
 
 
-
         //-------------------------------------------------------------------
         // UIComponenet API implementation
         //-------------------------------------------------------------------
 
-        override protected function childrenCreated ():void
-        {
-            fsTreeXML_changeHandler(null);
-            fsTreeXML.selectedPath = StoredFieldManager.instance.getString(Constants.SO_XML_PATH);
-        }
 
         override protected function createChildren():void
         {
             super.createChildren();
 
-            if(lblXMLDirecotry == null)
+            if (lblXMLDirecotry == null)
             {
                 lblXMLDirecotry = new Label();
                 lblXMLDirecotry.text = "Layout-file Location";
@@ -86,79 +89,103 @@ package org.okapp.guieditor.view
                 lblXMLDirecotry.width = COL1_WIDTH;
                 lblXMLDirecotry.bottom = 0;
                 lblXMLDirecotry.setStyle("backgroundColor", 0xFFFFFF);
+                lblXMLDirecotry.setStyle("paddingTop", 5);
                 addElement(lblXMLDirecotry);
             }
 
-            if(fsTreeXML==null)
+            if (btnCreate == null)
+            {
+                btnCreate = new Button();
+                btnCreate.top = 0;
+                btnCreate.left = 120;
+                btnCreate.label = "Create";
+                btnCreate.addEventListener(MouseEvent.CLICK, btnCreate_clickHandler);
+                addElement(btnCreate);
+            }
+
+            if (tiName == null)
+            {
+                tiName = new TextInput();
+                tiName.top = 3;
+                tiName.left = COL1_WIDTH + COL_GAP + 160;
+                tiName.addEventListener(TextOperationEvent.CHANGE, tiName_changeHandler);
+                addElement(tiName);
+            }
+
+            if (taEditor == null)
+            {
+                taEditor = new TextArea();
+                taEditor.top = 600;
+                taEditor.left = COL1_WIDTH + COL_GAP;
+                taEditor.right = 0;
+                taEditor.bottom = 0;
+                taEditor.setStyle("fontFamily", "_typewriter");
+                taEditor.setStyle("fontSize", 12);
+                taEditor.addEventListener(TextOperationEvent.CHANGE, editor_changeHandler);
+                addElement(taEditor);
+            }
+
+            if (fsTreeXML == null)
             {
                 fsTreeXML = new FileSystemTree();
                 fsTreeXML.left = 0;
                 fsTreeXML.top = 30;
                 fsTreeXML.width = COL1_WIDTH;
                 fsTreeXML.bottom = 0;
-                fsTreeXML.addEventListener(ListEvent.CHANGE,fsTreeXML_changeHandler);
-                fsTreeXML.selectedPath = StoredFieldManager.instance.getString(Constants.SO_XML_PATH);
+                fsTreeXML.addEventListener(ListEvent.CHANGE, fsTreeXML_changeHandler);
+                fsTreeXML.selectedPath = StoredFieldManager.instance.getString(Constants.SO_LAYOUT_PATH);
                 addElement(fsTreeXML);
 
+                fsTreeXML_changeHandler(null);
             }
 
-            if(lblPreview==null)
+            if (lblPreview == null)
             {
-                lblPreview=new Label();
-                lblPreview.y=0;
-                lblPreview.left=COL1_WIDTH+COL_GAP;
-                lblPreview.right=0;
-                lblPreview.text="Preview";
+                lblPreview = new Label();
+                lblPreview.y = 0;
+                lblPreview.left = COL1_WIDTH + COL_GAP;
+                lblPreview.right = 0;
+                lblPreview.text = "Preview";
+                lblPreview.setStyle("paddingTop", 5);
                 addElement(lblPreview);
-            }
-
-            if(taEditor==null)
-            {
-                taEditor=new TextArea();
-                taEditor.top=600;
-                taEditor.left=COL1_WIDTH+COL_GAP;
-                taEditor.right=0;
-                taEditor.bottom=0;
-                taEditor.setStyle("fontFamily","_typewriter");
-                taEditor.setStyle("fontSize",12);
-                taEditor.addEventListener(TextOperationEvent.CHANGE,editor_changeHandler);
-                addElement(taEditor);
             }
 
             createPreview();
         }
 
-
-        override protected function commitProperties ():void
+        override protected function commitProperties():void
         {
             super.commitProperties();
 
-            if(_selectedFileChanged && selectedFile && selectedFile.file)
+            if (_selectedFileChanged && selectedFile && selectedFile.file)
             {
-                var p:File = selectedFile.file.parent;
-                var paths:Array = [];
-                while(p != null)
-                {
-                    paths.unshift(p.nativePath);
-                    p = p.parent;
-                }
-
-                fsTreeXML.openPaths = paths;
+                fsTreeXML.openPaths = selectedFile.path;
                 _selectedFileChanged = false;
             }
         }
 
-        override protected function createPreview ():void
+        override protected function createPreview():void
         {
-            if (starling && _preview == null)
+            if (_preview == null)
             {
                 _preview = new Canvas();
-                _preview.x = 300;
+                _preview.x = COL1_WIDTH + COL_GAP;
                 _preview.y = 30;
+            }
+
+            if (starling)
+            {
                 starling.stage.addChild(_preview);
             }
         }
 
+        override protected function removePreview():void
+        {
+            if (starling && _preview)
+            {
+                starling.stage.removeChild(_preview);
+            }
+        }
 
 
         //-------------------------------------------------------------------
@@ -170,9 +197,10 @@ package org.okapp.guieditor.view
         private var _preview:Canvas;
         private var lblPreview:Label;
         private var lblXMLDirecotry:Label;
+        private var btnCreate:Button;
         private var fsTreeXML:FileSystemTree;
         private var taEditor:TextArea;
-
+        private var tiName:TextInput;
 
 
         //-------------------------------------------------------------------
@@ -185,19 +213,20 @@ package org.okapp.guieditor.view
                 _preview.clearAllElements();
 
             var path:String = fsTreeXML.selectedPath;
-            if(!path)
+            if (! path)
                 return;
 
             var newFile:GUIVO = new GUIVO(new File(path));
-            if(newFile.isGUIFile)
+            if (newFile.isValid)
             {
                 selectedFile = newFile;
 
-                StoredFieldManager.instance.setString(Constants.SO_XML_PATH, fsTreeXML.selectedPath);
+                StoredFieldManager.instance.setString(Constants.SO_LAYOUT_PATH, fsTreeXML.selectedPath);
 
+                tiName.text = newFile.file.name;
                 taEditor.text = selectedFile.buffer.toXMLString();
 
-                if(_preview && selectedFile)
+                if (_preview && selectedFile)
                     _preview.createAllElements(selectedFile.buffer);
             }
             else
@@ -214,7 +243,7 @@ package org.okapp.guieditor.view
                 var xml:XML = new XML(taEditor.text);
                 taEditor.errorString = "";
             }
-            catch(error:Error)
+            catch (error:Error)
             {
                 taEditor.errorString = error.message;
                 return;
@@ -222,11 +251,43 @@ package org.okapp.guieditor.view
 
             selectedFile.update(xml);
 
-            if(_preview && selectedFile)
+            if (_preview && selectedFile)
             {
                 _preview.clearAllElements();
                 _preview.createAllElements(selectedFile.buffer);
             }
+        }
+
+        private function tiName_changeHandler(event:TextOperationEvent):void
+        {
+            //TODO: Add rename ability
+        }
+
+        private function btnCreate_clickHandler(event:MouseEvent):void
+        {
+            var file:File = new File(fsTreeXML.selectedPath);
+            var parentPath:String;
+
+            if (file.isDirectory)
+                parentPath = file.nativePath;
+            else
+                parentPath = file.parent.nativePath;
+
+            var i:int = 1;
+            var newFile:File = new File(parentPath + "\\window_" + i + ".xml");
+            while (newFile.exists)
+                newFile = new File(parentPath + "\\window_" + (++ i) + ".xml");
+
+            var stream:FileStream = new FileStream();
+            stream.open(newFile, FileMode.WRITE);
+            var barr:ByteArray = new ByteArray();
+            barr.writeUTF('<gui xmlns="http://wwww.okapp.ru/gui/0.1" xmlns:of="com.okapp.pirates.ui.controls">\n<of:Text text="Hello world!" /></gui>');
+            stream.writeBytes(barr, 2, barr.length - 2);
+            stream.close();
+
+            fsTreeXML.refresh();
+            fsTreeXML.selectedPath = newFile.nativePath;
+            fsTreeXML_changeHandler(null);
         }
     }
 }

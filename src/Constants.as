@@ -10,8 +10,9 @@ package
         // Shared Object
         //-----------------------------
 
-        public static const SO_XML_PATH:String = "xml_path";
-        public static const SO_COMPONENTS_PATH:String = "components_path";
+        public static const SO_SELECTED_SCREEN:String = "current_screen";
+        public static const SO_LAYOUT_PATH:String = "xml_path";
+        public static const SO_ANIMATION_PATH:String = "xml_path";
 
 
         //-----------------------------
