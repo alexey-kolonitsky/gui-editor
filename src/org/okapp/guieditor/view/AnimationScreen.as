@@ -1,15 +1,11 @@
 package org.okapp.guieditor.view
 {
-    import flash.display.Loader;
     import flash.events.MouseEvent;
     import flash.filesystem.File;
-    import flash.filesystem.FileMode;
-    import flash.filesystem.FileStream;
-    import flash.utils.ByteArray;
+    import flash.geom.Point;
 
     import mx.collections.ArrayCollection;
     import mx.containers.Canvas;
-
     import mx.controls.FileSystemEnumerationMode;
     import mx.controls.FileSystemTree;
     import mx.core.ClassFactory;
@@ -18,19 +14,18 @@ package org.okapp.guieditor.view
     import org.kolonitsky.alexey.StoredFieldManager;
     import org.okapp.guieditor.model.AnimationTexture;
     import org.okapp.guieditor.renderers.TextureFileRenderer;
+    import org.okapp.guieditor.view.controls.AnimationCanvas;
+    import org.okapp.guieditor.view.controls.Layers;
     import org.okapp.guieditor.view.controls.TexturePreview;
+    import org.okapp.guieditor.view.controls.Timeline;
     import org.okapp.guieditor.view.controls.TimelineRule;
 
-    import spark.components.Group;
     import spark.components.Image;
     import spark.components.Label;
     import spark.components.List;
     import spark.components.TextArea;
-    import spark.events.IndexChangeEvent;
     import spark.events.TextOperationEvent;
     import spark.filters.GlowFilter;
-
-    import starling.core.Starling;
 
     //TODO: Admin: special sign for invalid message
     public class AnimationScreen extends BaseScreen
@@ -44,10 +39,10 @@ package org.okapp.guieditor.view
 
         public static const COL_GAP:Number = 4;
 
-
         public function AnimationScreen()
         {
             super();
+
         }
 
 
@@ -55,15 +50,7 @@ package org.okapp.guieditor.view
         {
             super.createChildren();
 
-            if (rule == null)
-            {
-                rule = new TimelineRule();
-                rule.left = COL3_LEFT;
-                rule.right = 0;
-                rule.top = 0;
-                rule.height = TimelineRule.DEFAULT_HEIGHT;
-                addElement(rule)
-            }
+
 
             if (lblXMLDirecotry == null)
             {
@@ -98,12 +85,24 @@ package org.okapp.guieditor.view
                 addElement(imgPreview);
             }
 
+            if (layers == null)
+            {
+                layers = new Layers();
+                layers.left = COL3_LEFT;
+                layers.right = 0;
+                layers.top = 0;
+                layers.height = TimelineRule.DEFAULT_HEIGHT;
+
+                addElement(layers)
+            }
+
             if (canvas == null)
             {
-                canvas = new Canvas();
+                canvas = new AnimationCanvas();
+                canvas.layers = layers;
                 canvas.setStyle("backgroundColor", 0xAAAAAA);
                 canvas.left = COL3_LEFT;
-                canvas.top = 30;
+                canvas.top = (Timeline.FRAME_HEIGHT + 1) * 3;
                 canvas.right = 0;
                 canvas.height = 400;
 
@@ -120,7 +119,7 @@ package org.okapp.guieditor.view
                 listTextures.doubleClickEnabled = true;
                 listTextures.itemRenderer = new ClassFactory(TextureFileRenderer);
                 listTextures.dataProvider = new ArrayCollection([]);
-                listTextures.addEventListener(IndexChangeEvent.CHANGE, listTextures_changeHandler);
+                listTextures.addEventListener(MouseEvent.MOUSE_DOWN, listTextures_changeHandler);
                 listTextures.addEventListener(MouseEvent.DOUBLE_CLICK, listTextures_doubleClickhandler);
                 addElement(listTextures);
             }
@@ -159,11 +158,13 @@ package org.okapp.guieditor.view
             var texture:AnimationTexture = listTextures.selectedItem as AnimationTexture;
 
             var img:Image = new Image();
+            img.source = texture.images[0];
             img.addEventListener(MouseEvent.ROLL_OVER, element_rollOverHandler);
             img.addEventListener(MouseEvent.ROLL_OUT, element_rollOutHandler);
             img.addEventListener(MouseEvent.MOUSE_DOWN, element_mouseDownHandler);
-            img.addEvent
-            texture.images[0]
+
+            layers.addImage(img);
+            canvas.renderFrame();
         }
 
         private function element_rollOverHandler(event:MouseEvent):void
@@ -180,11 +181,28 @@ package org.okapp.guieditor.view
                 target.filters = [ ];
         }
 
+        private var dragObject:Image = null;
+        private var dragObjectOriginalPosition:Point = new Point();
+
+        private var dragOffset:Point = new Point();
+
         private function element_mouseDownHandler(event:MouseEvent):void
         {
+            dragOffset.x = event.stageX;
+            dragOffset.y = event.stageY;
+
             var target:Image = event.currentTarget as Image;
             if (target)
+            {
                 target.filters = [ new GlowFilter(0xFF0000) ];
+                dragObject = target;
+
+                dragObjectOriginalPosition.x = dragObject.x;
+                dragObjectOriginalPosition.y = dragObject.y;
+
+                stage.addEventListener(MouseEvent.MOUSE_UP, stage_mouseUpHandler);
+                stage.addEventListener(MouseEvent.MOUSE_MOVE, stage_mouseMoveHandler);
+            }
         }
 
         private function element_mouseUpHandler(event:MouseEvent):void
@@ -212,13 +230,13 @@ package org.okapp.guieditor.view
 
         private var lblPreview:Label;
         private var lblXMLDirecotry:Label;
-        private var rule:TimelineRule;
+        private var layers:Layers;
         private var fsTexturesDirectory:FileSystemTree;
         private var imgPreview:TexturePreview;
         private var listTextures:List;
         private var taEditor:TextArea;
 
-        private var canvas:Canvas;
+        private var canvas:AnimationCanvas;
 
         private var textures:Array /* of AnimationTexture */ = [];
 
@@ -236,29 +254,29 @@ package org.okapp.guieditor.view
             {
                 if ( !item.exists || item.isHidden || item.isDirectory || item.isPackage || item.isSymbolicLink )
                     continue;
-
-                var matchResult:Array = item.name.match(AnimationTexture.TEXTURE_FILENAME_PATTERN);
-                var isTexuteFile:Boolean = matchResult && matchResult.length > 0;
-                if ( !isTexuteFile )
-                    continue;
-
-                var itemIsPartOfSequence:Boolean = false;
-                for each (var texture:AnimationTexture in textures)
-                {
-                    itemIsPartOfSequence = texture.checkFile(item);
-                    if ( itemIsPartOfSequence )
-                    {
-                        texture.addFile(item);
-                        break;
-                    }
-                }
-
-                if ( !itemIsPartOfSequence )
-                {
-                    texture = new AnimationTexture();
+//
+//                var matchResult:Array = item.name.match(AnimationTexture.TEXTURE_FILENAME_PATTERN);
+//                var isTexuteFile:Boolean = matchResult && matchResult.length > 0;
+//                if ( !isTexuteFile )
+//                    continue;
+//
+//                var itemIsPartOfSequence:Boolean = false;
+//                for each (var texture:AnimationTexture in textures)
+//                {
+//                    itemIsPartOfSequence = texture.checkFile(item);
+//                    if ( itemIsPartOfSequence )
+//                    {
+//                        texture.addFile(item);
+//                        break;
+//                    }
+//                }
+//
+//                if ( !itemIsPartOfSequence )
+//                {
+                    var texture:AnimationTexture = new AnimationTexture();
                     texture.addFile(item);
                     textures.push(texture);
-                }
+//                }
             }
 
             listTextures.dataProvider = new ArrayCollection(textures);
@@ -270,9 +288,28 @@ package org.okapp.guieditor.view
 
         }
 
-        private function listTextures_changeHandler(event:IndexChangeEvent):void
+        private function listTextures_changeHandler(event:MouseEvent):void
         {
             imgPreview.texture = listTextures.selectedItem as AnimationTexture;
+        }
+
+        private function stage_mouseUpHandler(event:MouseEvent):void
+        {
+            dragObject = null;
+
+            stage.removeEventListener(MouseEvent.MOUSE_UP, stage_mouseUpHandler);
+            stage.removeEventListener(MouseEvent.MOUSE_MOVE, stage_mouseMoveHandler);
+        }
+
+        private function stage_mouseMoveHandler(event:MouseEvent):void
+        {
+            if (dragObject)
+            {
+                var dx:Number = event.stageX - dragOffset.x;
+                var dy:Number = event.stageY - dragOffset.y;
+                dragObject.x = dragObjectOriginalPosition.x + dx;
+                dragObject.y = dragObjectOriginalPosition.y + dy;
+            }
         }
     }
 }
