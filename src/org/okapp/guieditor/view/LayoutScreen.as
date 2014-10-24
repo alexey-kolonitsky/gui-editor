@@ -66,8 +66,6 @@ package org.okapp.guieditor.view
         public function LayoutScreen()
         {
             super();
-
-            StoredFieldManager.instance.initialize(Constants.APPLICATION_NAME + "v" + Constants.APPLICATION_VERSION);
         }
 
 

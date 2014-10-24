@@ -147,8 +147,22 @@ package org.okapp.guieditor.view
                 fsTexturesDirectory.enumerationMode = FileSystemEnumerationMode.DIRECTORIES_ONLY;
                 fsTexturesDirectory.addEventListener(ListEvent.CHANGE, fsTexturesDirecotry_changeHandler);
                 fsTexturesDirectory.selectedPath = StoredFieldManager.instance.getString(Constants.SO_ANIMATION_PATH);
-                addElement(fsTexturesDirectory);
 
+                if (fsTexturesDirectory.selectedPath)
+                {
+                    var f:File = new File(fsTexturesDirectory.selectedPath);
+                    var p:Array = [];
+
+                    // pars path
+                    var parent:File = f;
+                    while ((parent = parent.parent) != null)
+                        p.unshift(parent.nativePath);
+
+                    fsTexturesDirectory.openPaths = p;
+
+                }
+
+                addElement(fsTexturesDirectory);
                 fsTexturesDirecotry_changeHandler(null);
             }
         }
@@ -242,9 +256,11 @@ package org.okapp.guieditor.view
 
         private function fsTexturesDirecotry_changeHandler(event:ListEvent):void
         {
-            var file:File = new File(fsTexturesDirectory.selectedPath);
+            if (fsTexturesDirectory.selectedPath == null)
+                return;
 
-            if (file == null || !file.isDirectory || !file.exists)
+            var file:File = new File(fsTexturesDirectory.selectedPath);
+            if (file == null || !file.exists || !file.isDirectory )
                 return;
 
             var files:Array = file.getDirectoryListing();

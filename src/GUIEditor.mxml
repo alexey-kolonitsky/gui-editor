@@ -4,13 +4,14 @@
     xmlns:s="library://ns.adobe.com/flex/spark"
     width="1024" height="800"
     backgroundAlpha="0.0"
-    addedToStage="{addedToStageHandler(event)}"
-    creationComplete="{creationCompleteHandler(event)}">
+    addedToStage="{creationCompleteHandler(event)}">
 
     <fx:Script>
         <![CDATA[
             import feathers.system.DeviceCapabilities;
             import feathers.themes.MetalWorksMobileTheme;
+
+            import flash.events.Event;
 
             import mx.collections.ArrayCollection;
             import mx.events.FlexEvent;
@@ -39,25 +40,10 @@
             [Bindable]
             private var tabCollection:ArrayCollection = new ArrayCollection([SCREEN_LAYOUT, SCREEN_ANIMATION]);
 
-            override protected function initializationComplete ():void
-            {
-                DeviceCapabilities.dpi = 326;
-                StoredFieldManager.instance.initialize(Constants.APPLICATION_NAME);
+            private var screens:Dictionary = new Dictionary();
+            private var currentScreen:BaseScreen;
 
-                Starling.multitouchEnabled = true;
-
-                super.initializationComplete();
-            }
-
-            private function addedToStageHandler (event:flash.events.Event):void
-            {
-                starlingStage = new Starling(starling.display.Sprite, stage);
-                starlingStage.antiAliasing = 1;
-                starlingStage.start();
-                starlingStage.addEventListener(starling.events.Event.ROOT_CREATED, starling_rootCreatedHandler);
-            }
-
-            private function starling_rootCreatedHandler (event:starling.events.Event):void
+            private function starling_rootCreatedHandler(event:starling.events.Event):void
             {
                 new MetalWorksMobileTheme();
 
@@ -65,10 +51,7 @@
                     currentScreen.starling = starlingStage;
             }
 
-            private var screens:Dictionary = new Dictionary();
-            private var currentScreen:BaseScreen;
-
-            private function tabs_changeHandler (event:IndexChangeEvent):void
+            private function tabs_changeHandler(event:IndexChangeEvent):void
             {
                 removeElement(currentScreen);
 
@@ -82,23 +65,23 @@
                 addElement(currentScreen);
             }
 
-            private function createScreen (key:String):BaseScreen
+            private function createScreen(key:String):BaseScreen
             {
                 var result:BaseScreen = null;
 
                 switch (key)
                 {
-                    case SCREEN_ANIMATION:
-                        result = new AnimationScreen();
-                        break;
+                case SCREEN_ANIMATION:
+                    result = new AnimationScreen();
+                    break;
 
-                    case SCREEN_LAYOUT:
-                        result = new LayoutScreen();
-                        break;
+                case SCREEN_LAYOUT:
+                    result = new LayoutScreen();
+                    break;
 
-                    default:
-                        trace("WARNING: createScreen. Unexpected screen id: " + key);
-                        break;
+                default:
+                    trace("WARNING: createScreen. Unexpected screen id: " + key);
+                    break;
                 }
 
                 result.left = 48;
@@ -109,9 +92,27 @@
                 return result;
             }
 
-            private function creationCompleteHandler (event:FlexEvent):void
+            private function creationCompleteHandler(event:flash.events.Event):void
             {
-                var key:String = StoredFieldManager.instance.getString(Constants.SO_SELECTED_SCREEN);
+                var appFullName:String = Constants.APPLICATION_NAME + "-" + Constants.APPLICATION_VERSION;
+                var sfm:StoredFieldManager = StoredFieldManager.instance;
+
+                DeviceCapabilities.dpi = 326;
+
+                // Initialize local storage
+                sfm.initialize(appFullName);
+
+                // Initialize starling for specialized previews
+                Starling.multitouchEnabled = true;
+
+                starlingStage = new Starling(starling.display.Sprite, stage);
+                starlingStage.antiAliasing = 1;
+                starlingStage.start();
+                starlingStage.addEventListener(starling.events.Event.ROOT_CREATED, starling_rootCreatedHandler);
+
+                super.initialize();
+
+                var key:String = sfm.getString(Constants.SO_SELECTED_SCREEN);
                 if (key != null)
                     listTabs.selectedItem = key;
                 else
