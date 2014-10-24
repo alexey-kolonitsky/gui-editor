@@ -1,36 +1,69 @@
 package org.okapp.guieditor.view.controls
 {
+    import mx.controls.Label;
     import mx.core.UIComponent;
 
     public class TimelineRule extends UIComponent
     {
-        public static const BG_COLOR:uint = 0xEEEEEE;
-        public static const TICK_COLOR:uint = 0x999999;
+        public static const BG_COLOR:uint = 0xEFEFEF;
+        public static const TICK_COLOR:uint = 0x666666;
 
-        public static const RULE_TICK_WIDTH:Number = 8;
-        public static const DEFAULT_HEIGHT:Number = 16;
+        public static const DEFAULT_FPS:Number = 30;
+        public static const TIME_TICK_DURATION:Number = 1000; /* milliseconds */
+        public static const FRAME_WIDTH:Number = 8; /* pixels */
+        public static const DEFAULT_HEIGHT:Number = 16; /* pixels */
 
         public function TimelineRule()
         {
-
+            super();
         }
 
-        override protected function measure():void
-        {
-            super.measure();
-        }
+        private var labels:Array = [];
 
         override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
         {
             super.updateDisplayList(unscaledWidth, unscaledHeight);
+            var w:Number = unscaledWidth || explicitWidth;
+            var h:Number = DEFAULT_HEIGHT;
 
+            // Draw background
+            graphics.clear();
             graphics.beginFill(BG_COLOR);
-            graphics.drawRect(0, 0, unscaledWidth, unscaledHeight);
+            graphics.drawRect(0, 0, w, h);
 
+            // Draw tick
             graphics.beginFill(TICK_COLOR);
-            var n:int = unscaledWidth / RULE_TICK_WIDTH;
+            var n:int = w / FRAME_WIDTH;
             for (var i:int = 0; i < n; i++)
-                graphics.drawRect(i * RULE_TICK_WIDTH, 0, 1, DEFAULT_HEIGHT);
+            {
+                var tickHeight:int = 2;
+                if ((i % DEFAULT_FPS) == 0)
+                    tickHeight = h;
+
+                graphics.drawRect(i * FRAME_WIDTH, 0, 1, tickHeight);
+            }
+
+            // Add labels
+            var labelCount:int = w / (FRAME_WIDTH * DEFAULT_FPS);
+            while (labels.length < labelCount)
+                labels.push(new Label());
+
+            n = labels.length;
+            for (i = 0; i < n; i++)
+            {
+                var sec:int = i + 1;
+                var label:Label = labels[i];
+                label.text = sec + " сек";
+                label.x = sec * (FRAME_WIDTH * DEFAULT_FPS);
+                label.y = 0;
+                label.width = 200;
+                label.height = 30;
+                label.setStyle("paddingTop", 0);
+                label.visible = i < labelCount;
+
+                if (label.parent == null)
+                    addChild(label);
+            }
 
             graphics.endFill();
         }

@@ -98,8 +98,7 @@ package org.okapp.guieditor.view
 
             if (canvas == null)
             {
-                canvas = new AnimationCanvas();
-                canvas.layers = layers;
+                canvas = new AnimationCanvas(layers);
                 canvas.setStyle("backgroundColor", 0xAAAAAA);
                 canvas.left = COL3_LEFT;
                 canvas.top = (Timeline.FRAME_HEIGHT + 1) * 3;
@@ -159,7 +158,6 @@ package org.okapp.guieditor.view
                         p.unshift(parent.nativePath);
 
                     fsTexturesDirectory.openPaths = p;
-
                 }
 
                 addElement(fsTexturesDirectory);

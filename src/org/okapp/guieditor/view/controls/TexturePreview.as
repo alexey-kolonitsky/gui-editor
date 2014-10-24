@@ -136,7 +136,8 @@ package org.okapp.guieditor.view.controls
 
             if (_textureChanged)
             {
-                _states.dataProvider = new ArrayCollection(_texture.states);
+                if (_texture)
+                    _states.dataProvider = new ArrayCollection(_texture.states);
                 _textureChanged = false;
             }
         }

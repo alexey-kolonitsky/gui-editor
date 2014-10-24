@@ -5,44 +5,75 @@ package org.okapp.guieditor.view.controls
 
     import mx.containers.Canvas;
 
-    import spark.components.Image;
-
     public class AnimationCanvas extends Canvas
     {
-        public var updateTimer:Timer = null;
 
-        public var layers:Layers;
 
-        public function AnimationCanvas()
+        //-----------------------------
+        // Constructor
+        //-----------------------------
+
+        public function AnimationCanvas(layers:Layers)
         {
+            super();
+
+            if (layers == null)
+                throw new Error("layers parameter must be NOT NULL!");
+
+            this.layers = layers;
+
+            lastRenderedFrame = -1;
+
             updateTimer = new Timer(33);
             updateTimer.addEventListener(TimerEvent.TIMER, updateTimer_timerHandler);
             updateTimer.start();
         }
 
+        /**
+         * Remove all exists elements on canvas and display graphocs from
+         * current frame
+         */
         public function renderFrame():void
         {
             removeAllChildren();
 
             var n:int = layers.layers.length;
+            var index:int = layers.currentIndex;
+
             for (var i:int = 0; i < n; i++)
             {
-                var index:int = layers.currentIndex;
                 var timeline:Timeline = layers.layers[i];
-                var frames:Vector.<Image> = timeline.frames;
-                if (index in frames && frames[index])
-                    addChild(frames[index]);
+                var frame:TimelineFrame = timeline.getKeyframe(index);
+                if (frame && frame.content)
+                    addChild(frame.content);
             }
 
-            lastRendererdFrame = layers.currentIndex;
+            lastRenderedFrame = index;
         }
 
-        private var lastRendererdFrame:int = -1;
+
+
+        //-------------------------------------------------------------------
+        //
+        //  Private
+        //
+        //-------------------------------------------------------------------
+
+
+        public var layers:Layers;
+        private var updateTimer:Timer;
+        private var lastRenderedFrame:int;
 
         private function updateTimer_timerHandler(event:TimerEvent):void
         {
-            if (layers && lastRendererdFrame != layers.currentIndex)
+            if (layers == null)
+                return;
+
+            if (lastRenderedFrame != layers.currentIndex || layers.frameContentChanged)
+            {
                 renderFrame();
+                layers.frameContentRendered()
+            }
         }
     }
 }
