@@ -1,9 +1,13 @@
 package org.okapp.guieditor.view.controls
 {
     import flash.events.KeyboardEvent;
+    import flash.filesystem.File;
+    import flash.geom.Matrix;
     import flash.ui.Keyboard;
 
     import mx.core.UIComponent;
+
+    import org.okapp.guieditor.model.AnimationTexture;
 
     import spark.components.Image;
 
@@ -84,7 +88,17 @@ package org.okapp.guieditor.view.controls
          */
         public function addFrame(num:int = 1):void
         {
-            var currentFrame:TimelineFrame = getKeyframe(frameIndex);
+            var currentFrame:TimelineFrame;
+            if (frameIndex > size)
+            {
+                currentFrame = _keyframes[keyframes.length - 1];
+                num = frameIndex - size + 1;
+            }
+            else
+            {
+                currentFrame = getKeyframe(frameIndex);
+            }
+
             currentFrame.size += num;
 
             invalidateDisplayList();
@@ -159,8 +173,10 @@ package org.okapp.guieditor.view.controls
 
         public function getKeyframe(frameIndex:int):TimelineFrame
         {
-            var result:TimelineFrame = null;
+            if (frameIndex > size)
+                return null;
 
+            var result:TimelineFrame = null;
             for each (var frame:TimelineFrame in _keyframes)
                 if (frame.startIndex <= frameIndex)
                     result = frame;
@@ -190,6 +206,53 @@ package org.okapp.guieditor.view.controls
             }
 
             graphics.endFill();
+        }
+
+        public function toXML():XML
+        {
+            var result:XML = <timeline />;
+
+            var n:int = _keyframes.length;
+            for (var i:int = 0; i < n; i++)
+            {
+                var keyframe:TimelineFrame  = _keyframes[i];
+                if ( keyframe.isEmpty )
+                    continue;
+
+                var img:Image = keyframe.content;
+                var m:Matrix = img.transform.matrix;
+                var strTransform:String = m.a + ", " + m.b + ", " + m.c + ", " + m.d + ", " + m.tx + ", " + m.ty;
+
+                var keyframeNode:XML = <keyframe startIndex="" size="" content="" />;
+                keyframeNode.@startIndex = keyframe.startIndex;
+                keyframeNode.@size = keyframe.size;
+                keyframeNode.@content = keyframe.url;
+                keyframeNode.@matrix = strTransform;
+
+                result.appendChild(keyframeNode);
+            }
+
+            return result;
+        }
+
+        public function fromXML(value:XML):void
+        {
+            for each (var keyframeNode:XML in value.keyframe)
+            {
+                var fn:String = String(keyframeNode.@content);
+                var texture:AnimationTexture = new AnimationTexture();
+                texture.addFile(new File(fn));
+
+                var img:Image = new Image();
+                img.source = texture.image;
+
+                var keyframe:TimelineFrame = new TimelineFrame();
+                keyframe.startIndex = keyframeNode.@startIndex;
+                keyframe.size = keyframeNode.@size;
+                keyframe.url = texture.file.nativePath;
+                keyframe.content = img;
+                _keyframes.push(keyframe);
+            }
         }
     }
 }

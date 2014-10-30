@@ -1,8 +1,14 @@
 package org.okapp.guieditor.view
 {
+    import flash.events.Event;
+    import flash.events.KeyboardEvent;
     import flash.events.MouseEvent;
     import flash.filesystem.File;
+    import flash.filesystem.FileMode;
+    import flash.filesystem.FileStream;
     import flash.geom.Point;
+    import flash.net.FileFilter;
+    import flash.ui.Keyboard;
 
     import mx.collections.ArrayCollection;
     import mx.containers.Canvas;
@@ -42,15 +48,48 @@ package org.okapp.guieditor.view
         public function AnimationScreen()
         {
             super();
-
+            addEventListener(Event.ADDED_TO_STAGE, addedToStage);
         }
 
+        private function addedToStage(event:Event):void
+        {
+            stage.addEventListener(KeyboardEvent.KEY_DOWN, stage_keyDownHandler);
+        }
+
+        private function stage_keyDownHandler(event:KeyboardEvent):void
+        {
+            switch (event.keyCode)
+            {
+                case Keyboard.I:
+                    var file:File = new File();
+                    file.browseForOpen("Open animation model file", [ new FileFilter("Animation model file", "xml") ]);
+                    file.addEventListener(Event.SELECT, file_selectHandler);
+                    break;
+
+                case Keyboard.E:
+
+                    var _buffer:XML = layers.toXML();
+                    taEditor.text = _buffer.toXMLString();
+                    var file:File = new File();
+                    file = file.resolvePath("app:/tmp.xml");
+                    var stream:FileStream = new FileStream();
+                    stream.open(file, FileMode.WRITE);
+                    stream.writeUTFBytes(_buffer.toString());
+                    stream.close();
+
+                    break;
+            }
+        }
+
+        private function file_selectHandler(event:Event):void
+        {
+            var file:File = event.currentTarget as File;
+
+        }
 
         override protected function createChildren():void
         {
             super.createChildren();
-
-
 
             if (lblXMLDirecotry == null)
             {
@@ -89,23 +128,21 @@ package org.okapp.guieditor.view
             {
                 layers = new Layers();
                 layers.left = COL3_LEFT;
-                layers.right = 0;
+                layers.right = COL_GAP;
                 layers.top = 0;
                 layers.height = TimelineRule.DEFAULT_HEIGHT;
-
-                addElement(layers)
             }
 
             if (canvas == null)
             {
                 canvas = new AnimationCanvas(layers);
-                canvas.setStyle("backgroundColor", 0xAAAAAA);
                 canvas.left = COL3_LEFT;
                 canvas.top = (Timeline.FRAME_HEIGHT + 1) * 3;
-                canvas.right = 0;
+                canvas.right = COL_GAP;
                 canvas.height = 400;
 
                 addElement(canvas);
+                addElement(layers)
             }
 
             if (listTextures == null)
@@ -128,7 +165,7 @@ package org.okapp.guieditor.view
                 taEditor = new TextArea();
                 taEditor.top = 600;
                 taEditor.left = COL3_LEFT;
-                taEditor.right = 0;
+                taEditor.right = COL_GAP;
                 taEditor.bottom = 0;
                 taEditor.setStyle("fontFamily", "_typewriter");
                 taEditor.setStyle("fontSize", 12);
@@ -169,13 +206,15 @@ package org.okapp.guieditor.view
         {
             var texture:AnimationTexture = listTextures.selectedItem as AnimationTexture;
 
+            var file:File = texture.file;
+
             var img:Image = new Image();
-            img.source = texture.images[0];
+            img.source = texture.image;
             img.addEventListener(MouseEvent.ROLL_OVER, element_rollOverHandler);
             img.addEventListener(MouseEvent.ROLL_OUT, element_rollOutHandler);
             img.addEventListener(MouseEvent.MOUSE_DOWN, element_mouseDownHandler);
 
-            layers.addImage(img);
+            layers.addImage(img, file.nativePath);
             canvas.renderFrame();
         }
 
@@ -268,32 +307,17 @@ package org.okapp.guieditor.view
             {
                 if ( !item.exists || item.isHidden || item.isDirectory || item.isPackage || item.isSymbolicLink )
                     continue;
-//
-//                var matchResult:Array = item.name.match(AnimationTexture.TEXTURE_FILENAME_PATTERN);
-//                var isTexuteFile:Boolean = matchResult && matchResult.length > 0;
-//                if ( !isTexuteFile )
-//                    continue;
-//
-//                var itemIsPartOfSequence:Boolean = false;
-//                for each (var texture:AnimationTexture in textures)
-//                {
-//                    itemIsPartOfSequence = texture.checkFile(item);
-//                    if ( itemIsPartOfSequence )
-//                    {
-//                        texture.addFile(item);
-//                        break;
-//                    }
-//                }
-//
-//                if ( !itemIsPartOfSequence )
-//                {
-                    var texture:AnimationTexture = new AnimationTexture();
-                    texture.addFile(item);
-                    textures.push(texture);
-//                }
+
+                var texture:AnimationTexture = new AnimationTexture();
+                texture.addFile(item);
+                textures.push(texture);
             }
 
             listTextures.dataProvider = new ArrayCollection(textures);
+            listTextures.selectedIndex = 0;
+
+            imgPreview.texture = textures[0];
+
             StoredFieldManager.instance.setString(Constants.SO_ANIMATION_PATH, file.nativePath);
         }
 

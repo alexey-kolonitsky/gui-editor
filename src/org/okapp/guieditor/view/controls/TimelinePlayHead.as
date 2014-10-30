@@ -4,21 +4,27 @@ package org.okapp.guieditor.view.controls
 
     public class TimelinePlayHead extends UIComponent
     {
+        public static const COLOR:uint = 0xFF0000;
+
         public function TimelinePlayHead()
         {
-            graphics.clear();
-            graphics.beginFill(0xFF0000);
-            graphics.drawRect(0, 0, Timeline.FRAME_WIDTH - 1, Timeline.FRAME_HEIGHT);
-            graphics.drawRect(Timeline.FRAME_WIDTH / 2, Timeline.FRAME_HEIGHT, 1, Timeline.FRAME_HEIGHT * 2);
-            graphics.endFill();
+
         }
 
         override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
         {
             super.updateDisplayList(unscaledWidth, unscaledHeight);
 
+            drawPlayhead(COLOR, Timeline.FRAME_WIDTH, Timeline.FRAME_HEIGHT, unscaledHeight);
+        }
 
-
+        private function drawPlayhead(color:uint, frameWidth:Number, frameHeight:Number, height:Number):void
+        {
+            graphics.clear();
+            graphics.beginFill(color);
+            graphics.drawRect(0, 0, frameWidth - 1, TimelineRule.DEFAULT_HEIGHT);
+            graphics.drawRect(frameWidth >> 1, TimelineRule.DEFAULT_HEIGHT, 1, height);
+            graphics.endFill();
         }
     }
 }

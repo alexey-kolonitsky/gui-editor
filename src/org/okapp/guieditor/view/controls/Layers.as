@@ -10,6 +10,7 @@ package org.okapp.guieditor.view.controls
     import mx.core.UIComponent;
 
     import spark.components.Image;
+    import spark.filters.DropShadowFilter;
 
     public class Layers extends UIComponent
     {
@@ -104,10 +105,32 @@ package org.okapp.guieditor.view.controls
             _layers = new <Timeline>[ timeline ];
             addChild(timeline);
 
+            filters = [ new DropShadowFilter(4, 90, 0x666666, 0.5) ];
+
             addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
         }
 
-        public function addImage(image:Image):void
+        public function toXML():XML
+        {
+            var result:XML = <animation />;
+
+            for each (var timeline:Timeline in _layers)
+                result.appendChild(timeline.toXML());
+
+            return result;
+        }
+
+        public function fromXML(value:XML):void
+        {
+            for each (var timelineNode:XML in value.timeline)
+            {
+                var timeline:Timeline = new Timeline();
+                timeline.fromXML(timelineNode);
+            }
+        }
+
+
+        public function addImage(image:Image, nativePath:String):void
         {
             var timeline:Timeline, frame:TimelineFrame;
             if (selectedLayer == null)
@@ -122,6 +145,7 @@ package org.okapp.guieditor.view.controls
                 case TimelineFrame.TYPE_FRAME:
                     frame = addKeyframe();
                     frame.content = image;
+                    frame.url = nativePath;
                     break;
 
                 case TimelineFrame.TYPE_KEYFRAME:
@@ -129,6 +153,7 @@ package org.okapp.guieditor.view.controls
                     if ( frame.isEmpty )
                     {
                         frame.content = image;
+                        frame.url = nativePath;
                     }
                     else
                     {
@@ -137,17 +162,21 @@ package org.okapp.guieditor.view.controls
 
                         frame = timeline.getKeyframe(0);
                         frame.content = image;
+                        frame.url = nativePath;
 
                         selectedLayerIndex++;
 
                         _layers.splice(selectedLayerIndex, 0, timeline);
                         addChildAt(timeline, selectedLayerIndex);
+
+                        invalidateSize();
                     }
                     break;
 
                 case TimelineFrame.TYPE_NOT_EXISTS:
                     frame = addKeyframe();
                     frame.content = image;
+                    frame.url = nativePath;
                     break;
 
                 default:
@@ -201,6 +230,7 @@ package org.okapp.guieditor.view.controls
                 playHead = new TimelinePlayHead();
                 playHead.top = 0;
                 playHead.left = 0;
+                playHead.bottom = 0;
                 addChild(playHead);
             }
 
@@ -276,6 +306,9 @@ package org.okapp.guieditor.view.controls
             }
 
             graphics.clear();
+            graphics.beginFill(0xCCCCCC);
+            graphics.drawRect(0, TimelineRule.DEFAULT_HEIGHT, unscaledWidth, layers.length * Timeline.FRAME_HEIGHT);
+
             graphics.beginFill(Timeline.TICK_COLOR);
             var n:int = unscaledWidth / Timeline.FRAME_WIDTH;
             for (var i:int = 0; i < n; i++)
@@ -439,9 +472,9 @@ package org.okapp.guieditor.view.controls
             {
                 currentIndex = 0;
             }
-            else if (newIndex > size)
+            else if (newIndex >= size)
             {
-                currentIndex = size;
+                currentIndex = size -1;
             }
             else
             {

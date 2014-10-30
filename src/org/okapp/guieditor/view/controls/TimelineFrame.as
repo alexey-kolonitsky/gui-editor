@@ -11,6 +11,7 @@ package org.okapp.guieditor.view.controls
         public var startIndex:int;
         public var size:int;
         public var content:Image;
+        public var url:String;
 
         public function get isEmpty():Boolean
         {

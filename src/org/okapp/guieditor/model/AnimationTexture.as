@@ -9,17 +9,17 @@ package org.okapp.guieditor.model
 
     public class AnimationTexture
     {
-        public static const TEXTURE_FILENAME_PATTERN:RegExp = /^(?P<name>[a-z_]*)(?P<state>_[a-z0-9_]*)\.png$/i;
+        public static const TEXTURE_FILENAME_PATTERN:RegExp = /^(?P<name>[a-z0-9_]*)\.png$/i;
 
         //-----------------------------
         // files
         //-----------------------------
 
-        private var _files:Vector.<File>;
+        private var _file:File;
 
-        private function get files():Vector.<File>
+        public function get file():File
         {
-            return _files;
+            return _file;
         }
 
 
@@ -39,24 +39,11 @@ package org.okapp.guieditor.model
         //  Images
         //-----------------------------
 
-        private var _images:Vector.<Loader>;
+        private var _image:Loader;
 
-        public function get images():Vector.<Loader>
+        public function get image():Loader
         {
-            return _images;
-        }
-
-
-
-        //-----------------------------
-        // states
-        //-----------------------------
-
-        private var _states:Array;
-
-        public function get states():Array
-        {
-            return _states;
+            return _image;
         }
 
         //-----------------------------
@@ -65,9 +52,7 @@ package org.okapp.guieditor.model
 
         public function AnimationTexture()
         {
-            _files = new <File>[];
-            _images = new <Loader>[];
-            _states = [];
+
         }
 
         public function checkFile(file:File):Boolean
@@ -86,11 +71,10 @@ package org.okapp.guieditor.model
             var fn:String = file.name;
             var result:Array = TEXTURE_FILENAME_PATTERN.exec(fn);
 
-            if (_files.length == 0)
+            if (_file == null)
                 _name = result.name;
 
-            _files.push(file);
-            _states.push(result.state);
+            _file = file;
 
             var barrContent:ByteArray = new ByteArray();
 
@@ -102,7 +86,7 @@ package org.okapp.guieditor.model
             var loader:Loader = new Loader();
             loader.loadBytes(barrContent);
 
-            _images.push(loader);
+            _image = loader;
 
             return Boolean(result);
         }
