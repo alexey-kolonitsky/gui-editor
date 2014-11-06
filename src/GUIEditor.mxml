@@ -35,7 +35,7 @@
             private var so:StoredFieldManager = StoredFieldManager.instance;
 
             [Bindable]
-            private var starlingStage:Starling;
+            private var starlingStage:Starling = null;
 
             [Bindable]
             private var tabCollection:ArrayCollection = new ArrayCollection([SCREEN_LAYOUT, SCREEN_ANIMATION]);
@@ -88,7 +88,9 @@
                 result.top = 0;
                 result.bottom = 0;
                 result.right = 0;
-                result.starling = starlingStage;
+
+                if (starlingStage && starlingStage.context)
+                    result.starling = starlingStage;
                 return result;
             }
 

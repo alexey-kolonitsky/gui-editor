@@ -1,8 +1,11 @@
 package org.okapp.guieditor.view
 {
+    import com.okapp.pirates.commands.StarlingContextCommand;
     import com.okapp.pirates.ui.controls.Canvas;
 
     import feathers.system.DeviceCapabilities;
+
+    import flash.display3D.Context3D;
 
     import flash.events.MouseEvent;
 
@@ -171,9 +174,12 @@ package org.okapp.guieditor.view
                 _preview.y = 30;
             }
 
-            if (starling)
+            var context:Context3D = Starling.context;
+            if (starling && context)
             {
                 starling.stage.addChild(_preview);
+                var cmd:StarlingContextCommand = new StarlingContextCommand();
+                cmd.execute();
             }
         }
 
