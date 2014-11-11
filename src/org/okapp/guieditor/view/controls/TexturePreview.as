@@ -1,23 +1,11 @@
 package org.okapp.guieditor.view.controls
 {
-    import flash.events.MouseEvent;
-    import flash.events.TimerEvent;
-    import flash.utils.Timer;
-
-    import mx.collections.ArrayCollection;
-
     import mx.graphics.SolidColor;
 
     import org.okapp.guieditor.model.AnimationTexture;
 
-    import spark.components.Button;
-
     import spark.components.Group;
-
     import spark.components.Image;
-    import spark.components.List;
-    import spark.events.IndexChangeEvent;
-    import spark.layouts.HorizontalLayout;
     import spark.primitives.Rect;
 
     public class TexturePreview extends Group
@@ -32,7 +20,6 @@ package org.okapp.guieditor.view.controls
 
         public function set texture(value:AnimationTexture):void
         {
-            _index = 0;
             _texture = value;
             _textureChanged = true;
             invalidateProperties();
@@ -41,14 +28,9 @@ package org.okapp.guieditor.view.controls
 
         private var _image:Image;
         private var _rect:Rect;
-        private var _btnPlay:Button;
-
-        private var updateTimer:Timer;
-        private var _index:int;
 
         public function TexturePreview()
         {
-            _index = 0;
         }
 
 
@@ -85,12 +67,13 @@ package org.okapp.guieditor.view.controls
         {
             super.commitProperties();
 
-            if (_textureChanged)
+            if (_textureChanged && _image)
             {
                 if (_texture)
                     _image.source = _texture.image;
                 else
                     _image.source = null;
+
                 _textureChanged = false;
             }
         }

@@ -2,6 +2,7 @@ package org.okapp.guieditor.view.controls
 {
     import mx.containers.Canvas;
     import mx.controls.Label;
+    import mx.controls.Text;
     import mx.controls.TextArea;
 
     import org.okapp.guieditor.model.DataFile;
@@ -72,11 +73,12 @@ package org.okapp.guieditor.view.controls
 
             if (taEditor == null)
             {
-                taEditor = new TextArea();
+                taEditor = new Text();
                 taEditor.top = 20;
                 taEditor.left = 0;
                 taEditor.right = 0;
                 taEditor.bottom = 0;
+                taEditor.selectable = true;
                 taEditor.setStyle("fontFamily", "_typewriter");
                 taEditor.setStyle("fontSize", 12);
                 addChild(taEditor);
@@ -107,7 +109,7 @@ package org.okapp.guieditor.view.controls
 
         }
 
-        private var taEditor:TextArea;
+        private var taEditor:Text;
         private var lblTitle:Label;
     }
 }

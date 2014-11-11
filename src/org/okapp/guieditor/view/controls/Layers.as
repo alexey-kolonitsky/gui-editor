@@ -85,11 +85,6 @@ package org.okapp.guieditor.view.controls
             return _frameContentChanged;
         }
 
-        public function frameContentRendered():void
-        {
-            _frameContentChanged = false;
-        }
-
 
         //-----------------------------
         // Constructor
@@ -105,6 +100,14 @@ package org.okapp.guieditor.view.controls
         }
 
         /**
+         * Mark current frame as rendered
+         */
+        public function frameContentRendered():void
+        {
+            _frameContentChanged = false;
+        }
+
+        /**
          *  Remove all timelines with theirs content and clear selection
          *  properties.
          */
@@ -114,7 +117,7 @@ package org.okapp.guieditor.view.controls
                 removeChild(timeline);
 
             _layers.length = 0;
-            playHead.playHeadHeight = 0;
+            playHead.playHeadHeight = 1;
         }
 
         public function toXMLList():Vector.<XML>
@@ -132,25 +135,26 @@ package org.okapp.guieditor.view.controls
 
         public function loadFromXML(value:XML):void
         {
-            var timeline:Timeline;
-
-            playHead.playHeadHeight = 1;
-
-            for each (timeline in _layers)
-                removeChild(timeline);
-
-            _layers.length = 0;
+            default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
 
             for each (var timelineNode:XML in value.timeline)
             {
-                timeline = new Timeline();
+                var timeline:Timeline = new Timeline();
                 timeline.fromXML(timelineNode);
 
                 _layers.push(timeline);
-                addChild(timeline);
+                addChildAt(timeline, numChildren - 1);
             }
-        }
 
+            _frameContentChanged = true;
+
+            selectedLayer.invalidateDisplayList();
+
+            currentIndex = 0;
+
+            invalidateDisplayList();
+            invalidateSize();
+        }
 
         public function addImage(image:Image, nativePath:String):void
         {

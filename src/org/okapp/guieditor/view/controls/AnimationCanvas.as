@@ -1,6 +1,8 @@
 package org.okapp.guieditor.view.controls
 {
+    import flash.display.Bitmap;
     import flash.display.BitmapData;
+    import flash.display.Loader;
     import flash.display.Sprite;
     import flash.events.Event;
     import flash.events.KeyboardEvent;
@@ -188,16 +190,26 @@ package org.okapp.guieditor.view.controls
             var n:int = layers.layers.length;
             var index:int = layers.currentIndex;
 
+            addChild(pivot);
+            drawGrid();
+
             for (var i:int = 0; i < n; i++)
             {
                 var timeline:Timeline = layers.layers[i];
                 var frame:TimelineFrame = timeline.getKeyframe(index);
                 if (frame && frame.content)
-                    addChild(frame.content);
+                {
+                    var img:Image = frame.content;
+                    var ldr:Loader = img.source as Loader;
+                    var bm:Bitmap = ldr.content as Bitmap;
+                    if (bm)
+                    {
+                        graphics.beginBitmapFill(bm.bitmapData, new Matrix());
+                        graphics.drawRect(100, 100, bm.width, bm.height);
+                        graphics.endFill();
+                    }
+                }
             }
-
-            addChild(pivot);
-            drawGrid();
 
             lastRenderedFrame = index;
         }

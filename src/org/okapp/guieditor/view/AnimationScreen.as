@@ -1,26 +1,19 @@
 package org.okapp.guieditor.view
 {
     import flash.events.Event;
-    import flash.events.KeyboardEvent;
     import flash.events.MouseEvent;
+    import flash.events.TimerEvent;
     import flash.filesystem.File;
-    import flash.filesystem.FileMode;
-    import flash.filesystem.FileStream;
     import flash.net.FileFilter;
-    import flash.ui.Keyboard;
+    import flash.utils.Timer;
 
     import mx.collections.ArrayCollection;
-    import mx.collections.HierarchicalData;
-    import mx.containers.Box;
     import mx.containers.HBox;
     import mx.containers.TabNavigator;
     import mx.controls.FileSystemEnumerationMode;
     import mx.controls.FileSystemTree;
-    import mx.controls.Tree;
     import mx.core.ClassFactory;
     import mx.events.ListEvent;
-    import mx.managers.PopUpManager;
-    import mx.managers.PopUpManagerChildList;
 
     import org.kolonitsky.alexey.StoredFieldManager;
     import org.okapp.guieditor.model.AnimationModelEvent;
@@ -35,15 +28,11 @@ package org.okapp.guieditor.view
     import org.okapp.guieditor.view.controls.TexturePreview;
     import org.okapp.guieditor.view.controls.Timeline;
     import org.okapp.guieditor.view.controls.TimelineRule;
-    import org.okapp.guieditor.view.popups.CreateStatePopup;
 
     import spark.components.Button;
-    import spark.components.Group;
     import spark.components.Image;
     import spark.components.Label;
     import spark.components.List;
-    import spark.components.TextArea;
-    import spark.events.TextOperationEvent;
 
     //TODO: Admin: special sign for invalid message
     public class AnimationScreen extends BaseScreen
@@ -58,7 +47,7 @@ package org.okapp.guieditor.view
         public static const COL_GAP:Number = 4;
 
 
-        //------------------commitP-----------
+        //-----------------------------
         // selected file
         //-----------------------------
 
@@ -86,6 +75,18 @@ package org.okapp.guieditor.view
         public function AnimationScreen()
         {
             super();
+
+            _autoSaveTimer = new Timer(Constants.AUTOSAVE_DELAY);
+            _autoSaveTimer.addEventListener(TimerEvent.TIMER, autoSaveTimer_timerHandler);
+        }
+
+        private function autoSaveTimer_timerHandler(event:TimerEvent):void
+        {
+            if (_selectedFile && _selectedFile.isValid)
+            {
+                _editor.update();
+                _selectedFile.flush();
+            }
         }
 
 
@@ -143,29 +144,28 @@ package org.okapp.guieditor.view
                 imgPreview.left = COL2_LEFT;
                 imgPreview.width = COL2_WIDTH;
                 imgPreview.height = COL2_WIDTH;
-
                 addElement(imgPreview);
             }
 
-            if (layers == null)
+            if (_layers == null)
             {
-                layers = new Layers();
-                layers.left = COL3_LEFT;
-                layers.right = COL_GAP;
-                layers.top = 0;
-                layers.height = TimelineRule.DEFAULT_HEIGHT;
+                _layers = new Layers();
+                _layers.left = COL3_LEFT;
+                _layers.right = COL_GAP;
+                _layers.top = 0;
+                _layers.height = TimelineRule.DEFAULT_HEIGHT;
             }
 
             if (_canvas == null)
             {
-                _canvas = new AnimationCanvas(layers);
+                _canvas = new AnimationCanvas(_layers);
                 _canvas.left = COL3_LEFT;
                 _canvas.top = (Timeline.FRAME_HEIGHT + 1) * 3;
                 _canvas.right = COL_GAP;
                 _canvas.height = 400;
 
                 addElement(_canvas);
-                addElement(layers)
+                addElement(_layers)
             }
 
             if (listTextures == null)
@@ -177,20 +177,20 @@ package org.okapp.guieditor.view
                 listTextures.width = COL2_WIDTH;
                 listTextures.doubleClickEnabled = true;
                 listTextures.itemRenderer = new ClassFactory(TextureFileRenderer);
-                listTextures.dataProvider = new ArrayCollection([]);
+                listTextures.addEventListener(ListEvent.CHANGE, listTextures_changeHandler);
                 listTextures.addEventListener(MouseEvent.MOUSE_DOWN, listTextures_changeHandler);
                 listTextures.addEventListener(MouseEvent.DOUBLE_CLICK, listTextures_doubleClickhandler);
                 addElement(listTextures);
             }
 
-            if (panels == null)
+            if (_panels == null)
             {
-                panels = new TabNavigator();
-                panels.top = 600;
-                panels.left = COL3_LEFT;
-                panels.right = COL_GAP;
-                panels.bottom = 0;
-                addElement(panels);
+                _panels = new HBox();
+                _panels.top = 600;
+                _panels.left = COL3_LEFT;
+                _panels.right = COL_GAP;
+                _panels.bottom = 0;
+                addElement(_panels);
 
                 if (_editor == null)
                 {
@@ -198,9 +198,9 @@ package org.okapp.guieditor.view
                     _editor.label = "Editor";
                     _editor.y = 0;
                     _editor.x = 0;
-                    _editor.percentWidth = 0;
-                    _editor.percentHeight = 0;
-                    panels.addChild(_editor);
+                    _editor.percentWidth = 100;
+                    _editor.percentHeight = 100;
+                    _panels.addChild(_editor);
                 }
 
                 if (_animationStatePanel == null)
@@ -212,7 +212,7 @@ package org.okapp.guieditor.view
                     _animationStatePanel.percentWidth = 100;
                     _animationStatePanel.percentHeight = 100;
                     _animationStatePanel.addEventListener(AnimationModelEvent.CHANGE_STATE, animationStatePanel_changeHandler);
-                    panels.addChild(_animationStatePanel);
+                    _panels.addChild(_animationStatePanel);
                 }
             }
 
@@ -232,7 +232,7 @@ package org.okapp.guieditor.view
                 btnCreateFile.top = 0;
                 btnCreateFile.left = COL2_WIDTH - 60;
                 btnCreateFile.width = 60;
-                btnCreateFile.label = "Save";
+                btnCreateFile.label = "Create";
                 btnCreateFile.addEventListener(MouseEvent.CLICK, btnCreate_clickHandler);
                 addElement(btnCreateFile);
             }
@@ -245,8 +245,8 @@ package org.okapp.guieditor.view
                 fsTexturesDirectory.width = COL1_WIDTH;
                 fsTexturesDirectory.bottom = 0;
                 fsTexturesDirectory.enumerationMode = FileSystemEnumerationMode.DIRECTORIES_ONLY;
-                fsTexturesDirectory.addEventListener(ListEvent.CHANGE, fsTexturesDirectory_changeHandler);
                 fsTexturesDirectory.selectedPath = StoredFieldManager.instance.getString(Constants.SO_ANIMATION_DIRECTORY);
+                fsTexturesDirectory.addEventListener(ListEvent.CHANGE, fsTexturesDirectory_changeHandler);
 
                 if (fsTexturesDirectory.selectedPath)
                 {
@@ -292,6 +292,9 @@ package org.okapp.guieditor.view
                 _editor.dataFile = selectedFile;
                 _animationStatePanel.selectedFile = selectedFile;
                 _selectedFileChanged = false;
+
+                if (selectedFile)
+                    _autoSaveTimer.start();
             }
         }
 
@@ -306,7 +309,7 @@ package org.okapp.guieditor.view
 
         private var lblPreview:Label;
         private var lblXMLDirecotry:Label;
-        private var layers:Layers;
+        private var _layers:Layers;
         private var fsTexturesDirectory:FileSystemTree;
         private var imgPreview:TexturePreview;
         private var listTextures:List;
@@ -317,11 +320,11 @@ package org.okapp.guieditor.view
 
         private var _canvas:AnimationCanvas;
 
-        private var textures:Array /* of AnimationTexture */ = [];
-
-        private var panels:TabNavigator = null;
+        private var _panels:HBox = null;
         private var _editor:RawFileEditor;
         private var _animationStatePanel:AnimationStatePanel;
+
+        private var _autoSaveTimer = null;
 
 
         private function openFile(path:String):void
@@ -342,6 +345,8 @@ package org.okapp.guieditor.view
         {
             default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
 
+            // Remove all existed timelines in last selected state and add
+            // new timelines from _layers
             var state:XML = _animationStatePanel.selectedState;
 
             for each (var timelineNode:XML in state.timeline)
@@ -351,23 +356,20 @@ package org.okapp.guieditor.view
                 delete chiltren[ timelineNode.childIndex() ];
             }
 
-            var timelines:Vector.<XML> = layers.toXMLList();
-            for each(var node:XML in timelines)
+            var timelines:Vector.<XML> = _layers.toXMLList();
+            for each (var node:XML in timelines)
                 state.appendChild(node);
 
-            if (event.newState && event.newState.timeline.length() > 0)
-            {
-                layers.loadFromXML(event.newState);
-            }
-            else
-            {
-                layers.clear();
-                layers.createEmptyLayer();
-            }
+            _layers.clear();
 
-            _canvas.renderFrame();
+            var newState:XML = event.newState;
+            if (newState && newState.timeline.length() > 0)
+                _layers.loadFromXML(newState);
+            else
+                _layers.createEmptyLayer();
+
             _editor.update();
-            _selectedFile.flush();
+            _canvas.renderFrame();
         }
 
         private function btnCreate_clickHandler(event:MouseEvent):void
@@ -392,8 +394,9 @@ package org.okapp.guieditor.view
             var img:Image = new Image();
             img.source = texture.image;
 
-            layers.addImage(img, file.nativePath);
+            _layers.addImage(img, file.nativePath);
             _canvas.renderFrame();
+            _editor.update();
         }
 
         private function fsTexturesDirectory_changeHandler(event:ListEvent):void
@@ -406,8 +409,7 @@ package org.okapp.guieditor.view
                 return;
 
             var files:Array = file.getDirectoryListing();
-
-            textures = [];
+            var textures:Array = [];
             for each (var item:File in files)
             {
                 var texture:AnimationTexture = new AnimationTexture(item);
@@ -423,7 +425,7 @@ package org.okapp.guieditor.view
             StoredFieldManager.instance.setString(Constants.SO_ANIMATION_DIRECTORY, file.nativePath);
         }
 
-        private function listTextures_changeHandler(event:MouseEvent):void
+        private function listTextures_changeHandler(event:Event):void
         {
             var texture:AnimationTexture = listTextures.selectedItem as AnimationTexture;
             imgPreview.texture = texture;

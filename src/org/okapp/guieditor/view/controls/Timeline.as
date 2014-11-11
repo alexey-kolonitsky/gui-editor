@@ -115,11 +115,6 @@ package org.okapp.guieditor.view.controls
             }
         }
 
-        public function cloneFrameContent(source:TimelineFrame, distenation:TimelineFrame):void
-        {
-
-        }
-
 
         //-----------------------------
         // frames
@@ -248,6 +243,11 @@ package org.okapp.guieditor.view.controls
 
         public function fromXML(value:XML):void
         {
+            if (value.keyframe.length() == 0)
+                return;
+
+            _keyframes.length = 0;
+
             for each (var keyframeNode:XML in value.keyframe)
             {
                 var fn:String = String(keyframeNode.@content);
@@ -268,7 +268,6 @@ package org.okapp.guieditor.view.controls
                 keyframe.url = texture.nativePath;
                 keyframe.content = img;
                 _keyframes.push(keyframe);
-
             }
         }
     }

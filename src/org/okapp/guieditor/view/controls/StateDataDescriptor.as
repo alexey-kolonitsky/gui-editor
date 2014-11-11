@@ -6,7 +6,6 @@ package org.okapp.guieditor.view.controls
 
     public class StateDataDescriptor implements ITreeDataDescriptor
     {
-        public static const NS:Namespace = new Namespace(Constants.OKAPP_ANIMATION_MODEL_NAMESPACE);
         public function StateDataDescriptor()
         {
             super();
@@ -15,14 +14,16 @@ package org.okapp.guieditor.view.controls
 
         public function getChildren(node:Object, model:Object = null):ICollectionView
         {
-            default xml namespace = NS;
+            default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
+
             var list:XMLList = node.state;
             return new XMLListCollection(list);
         }
 
         public function hasChildren(node:Object, model:Object = null):Boolean
         {
-            default xml namespace = NS;
+            default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
+
             var collection:XMLListCollection = model as XMLListCollection;
             for each (var source:XML in collection)
             {
@@ -39,7 +40,8 @@ package org.okapp.guieditor.view.controls
 
         public function isBranch(node:Object, model:Object = null):Boolean
         {
-            default xml namespace = NS;
+            default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
+
             var list:XMLList = node.state;
             return list.length() > 0;
         }

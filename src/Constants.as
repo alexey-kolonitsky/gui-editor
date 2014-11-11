@@ -5,6 +5,8 @@ package
         public static const APPLICATION_NAME:String = "gui-editor";
         public static const APPLICATION_VERSION:String = "0.0.1";
 
+        public static const AUTOSAVE_DELAY:Number = 1000;
+
 
         //-----------------------------
         // Shared Object

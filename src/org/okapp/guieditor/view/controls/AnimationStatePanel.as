@@ -135,7 +135,7 @@ package org.okapp.guieditor.view.controls
             {
                 if (_selectedFile)
                 {
-                    default xml namespace = new Namespace(Constants.OKAPP_ANIMATION_MODEL_NAMESPACE);
+                    default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
                     var xml:XMLList = _selectedFile.buffer.state;
                     treeStates.dataProvider = xml;
                     if (xml.length())
