@@ -253,6 +253,12 @@ package org.okapp.guieditor.view.controls
                 var fn:String = String(keyframeNode.@content);
                 var texture:AnimationTexture = new AnimationTexture(new File(fn));
 
+                if ( !texture.isValid )
+                {
+                    trace("Invalid loaded file: " + fn);
+                    return;
+                }
+
                 var img:Image = new Image();
                 img.source = texture.image;
 
@@ -262,6 +268,7 @@ package org.okapp.guieditor.view.controls
                 keyframe.url = texture.nativePath;
                 keyframe.content = img;
                 _keyframes.push(keyframe);
+
             }
         }
     }

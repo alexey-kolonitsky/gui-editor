@@ -74,6 +74,15 @@ package org.okapp.guieditor.model
             return _file;
         }
 
+        //-----------------------------
+        // strBuffer
+        //-----------------------------
+
+        public function get strBuffer():String
+        {
+            return _buffer.toXMLString();
+        }
+
 
         //-----------------------------
         // buffer
@@ -154,16 +163,19 @@ package org.okapp.guieditor.model
         public function update(content:XML, force:Boolean = false):void
         {
             var strContent:String = content.toXMLString();
-            var strBuffet:String = _buffer.toString();
 
-            if (strContent == strBuffet)
+            if (strContent == strBuffer && !force)
                 return;
 
             _buffer = content;
+            flush();
+        }
 
+        public function flush():void
+        {
             var stream:FileStream = new FileStream();
             stream.open(_file, FileMode.WRITE);
-            stream.writeUTFBytes(strBuffet);
+            stream.writeUTFBytes(strBuffer);
             stream.close();
         }
 

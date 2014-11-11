@@ -3,7 +3,6 @@ package org.okapp.guieditor.view.controls
     import flash.events.Event;
     import flash.events.KeyboardEvent;
     import flash.events.MouseEvent;
-    import flash.geom.Point;
     import flash.geom.Rectangle;
     import flash.ui.Keyboard;
 
@@ -68,8 +67,8 @@ package org.okapp.guieditor.view.controls
 
         public function get selectedLayer():Timeline
         {
-            if (selectedLayerIndex != -1)
-                return _layers[selectedLayerIndex];
+            if (_selectedLayerIndex != -1)
+                return _layers[_selectedLayerIndex];
 
             return null
         }
@@ -98,50 +97,57 @@ package org.okapp.guieditor.view.controls
 
         public function Layers()
         {
-            selectedLayerIndex = 0;
-            selectedFrameIndex = 0;
-            var timeline:Timeline;
-
-            timeline = new Timeline();
-            _layers = new <Timeline>[ timeline ];
-            addChild(timeline);
+            createEmptyLayer();
 
             filters = [ new DropShadowFilter(4, 90, 0x666666, 0.5) ];
 
             addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
         }
 
-        public function reset():void
+        /**
+         *  Remove all timelines with theirs content and clear selection
+         *  properties.
+         */
+        public function clear():void
         {
-            selectedLayerIndex = 0;
-            selectedFrameIndex = 0;
+            for each (var timeline:Timeline in _layers)
+                removeChild(timeline);
+
+            _layers.length = 0;
+            playHead.playHeadHeight = 0;
+        }
+
+        public function toXMLList():Vector.<XML>
+        {
+            var result:Vector.<XML> = new Vector.<XML>();
+
+            for each (var timeline:Timeline in _layers)
+            {
+                var node:XML = timeline.toXML();
+                result.push(node);
+            }
+
+            return result;
+        }
+
+        public function loadFromXML(value:XML):void
+        {
+            var timeline:Timeline;
 
             playHead.playHeadHeight = 1;
 
             for each (timeline in _layers)
                 removeChild(timeline);
 
-            var timeline:Timeline = new Timeline();
-            _layers = new <Timeline>[ timeline ];
-            addChild(timeline);
-        }
+            _layers.length = 0;
 
-        public function toXML():XMLList
-        {
-            var result:XMLList = new XMLList();
-
-            for each (var timeline:Timeline in _layers)
-                result.appendChild(timeline.toXML());
-
-            return result;
-        }
-
-        public function fromXML(value:XML):void
-        {
             for each (var timelineNode:XML in value.timeline)
             {
-                var timeline:Timeline = new Timeline();
+                timeline = new Timeline();
                 timeline.fromXML(timelineNode);
+
+                _layers.push(timeline);
+                addChild(timeline);
             }
         }
 
@@ -180,10 +186,10 @@ package org.okapp.guieditor.view.controls
                         frame.content = image;
                         frame.url = nativePath;
 
-                        selectedLayerIndex++;
+                        _selectedLayerIndex++;
 
-                        _layers.splice(selectedLayerIndex, 0, timeline);
-                        addChildAt(timeline, selectedLayerIndex);
+                        _layers.splice(_selectedLayerIndex, 0, timeline);
+                        addChildAt(timeline, _selectedLayerIndex);
 
                         playHead.playHeadHeight = _layers.length;
 
@@ -210,18 +216,43 @@ package org.okapp.guieditor.view.controls
             invalidateSize();
         }
 
+        /**
+         * Create
+         */
+        public function createEmptyLayer():void
+        {
+            _selectedLayerIndex = 0;
+            _selectedFrameIndex = 0;
+
+            var timeline:Timeline = new Timeline();
+            _layers = new <Timeline>[ timeline ];
+            addChild(timeline);
+
+            currentIndex = 0;
+        }
+
+
+
+
+        //-------------------------------------------------------------------
+        //
+        //  Private
+        //
+        //-------------------------------------------------------------------
 
         private var hoverFrameIndex:int = -1;
         private var hoverLayerIndex:int = -1;
 
-        private var selectedFrameIndex:int;
-        private var selectedLayerIndex:int;
+        private var _selectedFrameIndex:int;
+        private var _selectedLayerIndex:int;
 
         private var rule:TimelineRule;
         private var playHead:TimelinePlayHead;
 
         private var hoverFrame:VisualFrame;
         private var selectedFrame:VisualFrame;
+
+
 
 
         //-------------------------------------------------------------------
@@ -267,7 +298,6 @@ package org.okapp.guieditor.view.controls
             }
         }
 
-
         override protected function commitProperties():void
         {
             super.commitProperties();
@@ -312,14 +342,14 @@ package org.okapp.guieditor.view.controls
                 hoverFrame.visible = true;
             }
 
-            if (selectedFrameIndex == -1 || selectedFrameIndex == -1)
+            if (_selectedFrameIndex == -1 || _selectedFrameIndex == -1)
             {
                 selectedFrame.visible = false;
             }
             else
             {
-                selectedFrame.x = selectedFrameIndex * Timeline.FRAME_WIDTH;
-                selectedFrame.y = selectedLayerIndex * Timeline.FRAME_HEIGHT + TimelineRule.DEFAULT_HEIGHT;
+                selectedFrame.x = _selectedFrameIndex * Timeline.FRAME_WIDTH;
+                selectedFrame.y = _selectedLayerIndex * Timeline.FRAME_HEIGHT + TimelineRule.DEFAULT_HEIGHT;
                 selectedFrame.visible = true;
             }
 
@@ -372,9 +402,9 @@ package org.okapp.guieditor.view.controls
 
         private function mouseUpHandler(event:MouseEvent):void
         {
-            selectedFrameIndex = hoverFrameIndex;
-            selectedLayerIndex = hoverLayerIndex;
-            currentIndex = selectedFrameIndex;
+            _selectedFrameIndex = hoverFrameIndex;
+            _selectedLayerIndex = hoverLayerIndex;
+            currentIndex = _selectedFrameIndex;
         }
 
         private function stage_mouseMoveHandler(event:MouseEvent):void
@@ -410,19 +440,19 @@ package org.okapp.guieditor.view.controls
          */
         private function addKeyframe():TimelineFrame
         {
-            if ( !(selectedLayerIndex in _layers) )
+            if ( !(_selectedLayerIndex in _layers) )
             {
-                trace("WARNING: Incorrect selected layer index: " + selectedLayerIndex + ", layers number " + _layers.length);
+                trace("WARNING: Incorrect selected layer index: " + _selectedLayerIndex + ", layers number " + _layers.length);
                 return null;
             }
 
-            if ( (selectedFrameIndex == -1) )
+            if ( (_selectedFrameIndex == -1) )
             {
-                trace("WARNING: Incorrect selected frame index: " + selectedFrameIndex);
+                trace("WARNING: Incorrect selected frame index: " + _selectedFrameIndex);
                 return null;
             }
 
-            var frame:TimelineFrame = selectedLayer.addKeyframe(selectedFrameIndex);
+            var frame:TimelineFrame = selectedLayer.addKeyframe(_selectedFrameIndex);
 
             if (selectedLayer.size > _size)
                 _size = selectedLayer.size;
@@ -435,19 +465,19 @@ package org.okapp.guieditor.view.controls
          */
         private function addFrame():void
         {
-            if ( !(selectedLayerIndex in _layers) )
+            if ( !(_selectedLayerIndex in _layers) )
             {
-                trace("WARNING: Incorrect selected layer index: " + selectedLayerIndex + ", layers number " + _layers.length);
+                trace("WARNING: Incorrect selected layer index: " + _selectedLayerIndex + ", layers number " + _layers.length);
                 return;
             }
 
-            if ( (selectedFrameIndex == -1) )
+            if ( (_selectedFrameIndex == -1) )
             {
-                trace("WARNING: Incorrect selected frame index: " + selectedFrameIndex);
+                trace("WARNING: Incorrect selected frame index: " + _selectedFrameIndex);
                 return;
             }
 
-            var timeline:Timeline = _layers[selectedLayerIndex];
+            var timeline:Timeline = _layers[_selectedLayerIndex];
             timeline.addFrame();
 
             if (timeline.size > _size)
@@ -468,7 +498,7 @@ package org.okapp.guieditor.view.controls
 
                 case Keyboard.F7: // move forward and add keyframe
                     currentIndex++;
-                    selectedFrameIndex = currentIndex;
+                    _selectedFrameIndex = currentIndex;
                     addKeyframe();
                     break;
 

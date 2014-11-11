@@ -3,33 +3,20 @@ package org.okapp.guieditor.view
     import com.okapp.pirates.commands.StarlingContextCommand;
     import com.okapp.pirates.ui.controls.Canvas;
 
-    import feathers.system.DeviceCapabilities;
-
     import flash.display3D.Context3D;
-
     import flash.events.MouseEvent;
-
     import flash.filesystem.File;
-    import flash.filesystem.FileMode;
-    import flash.filesystem.FileStream;
-    import flash.utils.ByteArray;
 
-    import mx.collections.ArrayCollection;
     import mx.controls.FileSystemTree;
-    import mx.events.FlexEvent;
     import mx.events.ListEvent;
 
     import org.kolonitsky.alexey.StoredFieldManager;
     import org.okapp.guieditor.model.DataFile;
-
     import org.okapp.guieditor.model.GUIVO;
 
     import spark.components.Button;
-
-    import spark.components.Group;
     import spark.components.Label;
     import spark.components.TextArea;
-    import spark.components.TextInput;
     import spark.events.TextOperationEvent;
 
     import starling.core.Starling;
@@ -91,6 +78,7 @@ package org.okapp.guieditor.view
                 lblXMLDirecotry.bottom = 0;
                 lblXMLDirecotry.setStyle("backgroundColor", 0xFFFFFF);
                 lblXMLDirecotry.setStyle("paddingTop", 5);
+                lblXMLDirecotry.setStyle("paddingLeft", 5);
                 addElement(lblXMLDirecotry);
             }
 
@@ -98,19 +86,11 @@ package org.okapp.guieditor.view
             {
                 btnCreate = new Button();
                 btnCreate.top = 0;
-                btnCreate.left = 120;
+                btnCreate.left = COL1_WIDTH - 60;
+                btnCreate.width = 60;
                 btnCreate.label = "Create";
                 btnCreate.addEventListener(MouseEvent.CLICK, btnCreate_clickHandler);
                 addElement(btnCreate);
-            }
-
-            if (tiName == null)
-            {
-                tiName = new TextInput();
-                tiName.top = 3;
-                tiName.left = COL1_WIDTH + COL_GAP + 160;
-                tiName.addEventListener(TextOperationEvent.CHANGE, tiName_changeHandler);
-                addElement(tiName);
             }
 
             if (taEditor == null)
@@ -154,6 +134,28 @@ package org.okapp.guieditor.view
             createPreview();
         }
 
+        override protected function initializationComplete():void
+        {
+            super.initializationComplete();
+
+            openFile(fsTreeXML.selectedPath);
+
+            if (_selectedFile == null)
+            {
+                var documentsPath:String = File.documentsDirectory.nativePath;
+                var newFile:File = DataFile.createEmptyFile(
+                    documentsPath,
+                    GUIVO.GUI_FILE_NAME_TEMPLATE,
+                    GUIVO.GUI_EMPTY_FILE_CONTENT);
+
+                _selectedFile = new GUIVO(newFile);
+            }
+
+            fsTreeXML.refresh();
+            fsTreeXML.selectedPath = _selectedFile.file.nativePath;
+            fsTreeXML_changeHandler(null);
+        }
+
         override protected function commitProperties():void
         {
             super.commitProperties();
@@ -164,6 +166,11 @@ package org.okapp.guieditor.view
                 _selectedFileChanged = false;
             }
         }
+
+
+        //-------------------------------------------------------------------
+        // Base Screen API Implementation
+        //-------------------------------------------------------------------
 
         override protected function createPreview():void
         {
@@ -182,6 +189,7 @@ package org.okapp.guieditor.view
                 cmd.execute();
             }
         }
+
 
         override protected function removePreview():void
         {
@@ -204,7 +212,30 @@ package org.okapp.guieditor.view
         private var btnCreate:Button;
         private var fsTreeXML:FileSystemTree;
         private var taEditor:TextArea;
-        private var tiName:TextInput;
+
+
+        private function openFile(path:String):void
+        {
+            if (path == null || path == "")
+                return;
+
+            var newFile:GUIVO = new GUIVO(new File(path));
+            if (newFile.isValid)
+            {
+                selectedFile = newFile;
+
+                StoredFieldManager.instance.setString(Constants.SO_LAYOUT_PATH, fsTreeXML.selectedPath);
+
+                taEditor.text = selectedFile.buffer.toXMLString();
+
+                if (_preview && selectedFile)
+                    _preview.createAllElements(selectedFile.buffer);
+            }
+            else
+            {
+                taEditor.text = newFile.log;
+            }
+        }
 
 
         //-------------------------------------------------------------------
@@ -216,28 +247,7 @@ package org.okapp.guieditor.view
             if (_preview)
                 _preview.clearAllElements();
 
-            var path:String = fsTreeXML.selectedPath;
-            if (! path)
-                return;
-
-            var newFile:GUIVO = new GUIVO(new File(path));
-            if (newFile.isValid)
-            {
-                selectedFile = newFile;
-
-                StoredFieldManager.instance.setString(Constants.SO_LAYOUT_PATH, fsTreeXML.selectedPath);
-
-                tiName.text = newFile.file.name;
-                taEditor.text = selectedFile.buffer.toXMLString();
-
-                if (_preview && selectedFile)
-                    _preview.createAllElements(selectedFile.buffer);
-            }
-            else
-            {
-                taEditor.text = newFile.log;
-            }
-
+            openFile(fsTreeXML.selectedPath);
         }
 
         private function editor_changeHandler(event:TextOperationEvent):void
@@ -269,29 +279,15 @@ package org.okapp.guieditor.view
 
         private function btnCreate_clickHandler(event:MouseEvent):void
         {
-            var file:File = new File(fsTreeXML.selectedPath);
-            var parentPath:String;
-
-            if (file.isDirectory)
-                parentPath = file.nativePath;
-            else
-                parentPath = file.parent.nativePath;
-
-            var i:int = 1;
-            var newFile:File = new File(parentPath + "\\window_" + i + ".xml");
-            while (newFile.exists)
-                newFile = new File(parentPath + "\\window_" + (++ i) + ".xml");
-
-            var stream:FileStream = new FileStream();
-            stream.open(newFile, FileMode.WRITE);
-            var barr:ByteArray = new ByteArray();
-            barr.writeUTF('<gui xmlns="http://wwww.okapp.ru/gui/0.1" xmlns:of="com.okapp.pirates.ui.controls">\n<of:Text text="Hello world!" /></gui>');
-            stream.writeBytes(barr, 2, barr.length - 2);
-            stream.close();
+            var newFile:File = DataFile.createEmptyFile(
+                fsTreeXML.selectedPath,
+                GUIVO.GUI_FILE_NAME_TEMPLATE,
+                GUIVO.GUI_EMPTY_FILE_CONTENT);
 
             fsTreeXML.refresh();
             fsTreeXML.selectedPath = newFile.nativePath;
             fsTreeXML_changeHandler(null);
         }
+
     }
 }

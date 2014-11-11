@@ -6,8 +6,15 @@ package org.okapp.guieditor.view.controls
     {
         public static const COLOR:uint = 0xFF0000;
 
-        private static var _playHeadHeight:int = 1;
+        //-----------------------------
+        // Playhead height
+        //-----------------------------
 
+        private var _playHeadHeight:int = 1;
+
+        /**
+         * This property used to optimize component height measurement
+         */
         public function get playHeadHeight():int
         {
             return _playHeadHeight;
@@ -20,6 +27,9 @@ package org.okapp.guieditor.view.controls
         }
 
 
+        //-----------------------------
+        // Constructor
+        //-----------------------------
 
         public function TimelinePlayHead()
         {
