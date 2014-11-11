@@ -6,6 +6,21 @@ package org.okapp.guieditor.view.controls
     {
         public static const COLOR:uint = 0xFF0000;
 
+        private static var _playHeadHeight:int = 1;
+
+        public function get playHeadHeight():int
+        {
+            return _playHeadHeight;
+        }
+
+        public function set playHeadHeight(value:int):void
+        {
+            _playHeadHeight = value;
+            invalidateDisplayList();
+        }
+
+
+
         public function TimelinePlayHead()
         {
 
@@ -15,15 +30,15 @@ package org.okapp.guieditor.view.controls
         {
             super.updateDisplayList(unscaledWidth, unscaledHeight);
 
-            drawPlayhead(COLOR, Timeline.FRAME_WIDTH, Timeline.FRAME_HEIGHT, unscaledHeight);
+            drawPlayhead(COLOR, Timeline.FRAME_WIDTH, Timeline.FRAME_HEIGHT);
         }
 
-        private function drawPlayhead(color:uint, frameWidth:Number, frameHeight:Number, height:Number):void
+        private function drawPlayhead(color:uint, frameWidth:Number, frameHeight:Number):void
         {
             graphics.clear();
             graphics.beginFill(color);
             graphics.drawRect(0, 0, frameWidth - 1, TimelineRule.DEFAULT_HEIGHT);
-            graphics.drawRect(frameWidth >> 1, TimelineRule.DEFAULT_HEIGHT, 1, height);
+            graphics.drawRect(frameWidth >> 1, TimelineRule.DEFAULT_HEIGHT, 1, frameHeight * _playHeadHeight);
             graphics.endFill();
         }
     }

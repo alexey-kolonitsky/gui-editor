@@ -87,7 +87,10 @@ package org.okapp.guieditor.view.controls
 
             if (_textureChanged)
             {
-                _image.source = _texture.image;
+                if (_texture)
+                    _image.source = _texture.image;
+                else
+                    _image.source = null;
                 _textureChanged = false;
             }
         }

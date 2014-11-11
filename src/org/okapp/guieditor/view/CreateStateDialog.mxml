@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!--
+  Created by Alexey on 11/10/2014.
+-->
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+    title="Create state"
+    width="400" height="300">
+
+
+    <fx:Script>
+        <![CDATA[
+        import mx.events.ValidationResultEvent;
+        import mx.managers.PopUpManager;
+
+        private function btnCreate_clickHandler(event:MouseEvent):void
+        {
+            dispatchEvent(new Event("NewState"));
+            PopUpManager.removePopUp(this);
+        }
+
+        private function btnCancel_clickHandler(event:MouseEvent):void
+        {
+            PopUpManager.removePopUp(this);
+        }
+
+
+    ]]>
+    </fx:Script>
+
+    <s:layout>
+        <s:VerticalLayout />
+    </s:layout>
+    <s:Label text="State name:" width="100%" />
+
+    <s:TextInput text="" id="tiStateName" width="100%" />
+
+    <s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center">
+        <s:Button id="btnCreate" label="create" width="60" click="{btnCreate_clickHandler(event)}" enabled="true"/>
+        <s:Button id="btnCancel" label="cancel" width="60" click="{btnCancel_clickHandler(event)}" enabled="true"/>
+    </s:HGroup>
+</s:TitleWindow>

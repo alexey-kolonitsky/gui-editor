@@ -3,6 +3,7 @@ package org.okapp.guieditor.model
     import flash.filesystem.File;
     import flash.filesystem.FileMode;
     import flash.filesystem.FileStream;
+    import flash.utils.ByteArray;
 
     import org.kolonitsky.alexey.utils.StringUtils;
 
@@ -12,16 +13,41 @@ package org.okapp.guieditor.model
         public static const WARNING_WRONG_EXTENSION:String = "Wrong file extension '{extension}'. Should be '{pattern}'";
         public static const WARNING_WRONG_NS:String = "File must contain '{pattern}' namespace";
 
-        /**
-         * Create file on HD
-         * @param path
-         * @return
-         */
-        public static function create (path:String):File
-        {
-            var result:File = new File(path);
 
-            return result;
+        /**
+         *
+         * @param fileNameTemplate with "#" to insert number
+         * @param emptyFileContent
+         */
+        public static function createEmptyFile(nativePath:String, fileNameTemplate:String, emptyFileContent:String):File
+        {
+            var file:File = new File(nativePath);
+            var parentPath:String;
+
+            if (file.isDirectory)
+                parentPath = file.nativePath + "\\";
+            else
+                parentPath = file.parent.nativePath + "\\";
+
+            var i:int = 1;
+            var fileName:String = parentPath + fileNameTemplate.replace("#", i);
+            var newFile:File = new File(fileName);
+            while (newFile.exists)
+            {
+                i++;
+                fileName = parentPath + fileNameTemplate.replace("#", i);
+                newFile = new File(fileName);
+            }
+
+            var barr:ByteArray = new ByteArray();
+            barr.writeUTF(emptyFileContent);
+
+            var stream:FileStream = new FileStream();
+            stream.open(newFile, FileMode.WRITE);
+            stream.writeBytes(barr, 2, barr.length - 2);
+            stream.close();
+
+            return newFile;
         }
 
 

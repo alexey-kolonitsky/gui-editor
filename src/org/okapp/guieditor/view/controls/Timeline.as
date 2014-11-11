@@ -100,8 +100,19 @@ package org.okapp.guieditor.view.controls
             }
 
             currentFrame.size += num;
+            updateStartIndex();
 
             invalidateDisplayList();
+        }
+
+        public function updateStartIndex():void
+        {
+            var startIndex:int = 0;
+            for each (var keyframe:TimelineFrame in _keyframes)
+            {
+                keyframe.startIndex = startIndex;
+                startIndex += keyframe.size;
+            }
         }
 
         public function cloneFrameContent(source:TimelineFrame, distenation:TimelineFrame):void
@@ -240,8 +251,7 @@ package org.okapp.guieditor.view.controls
             for each (var keyframeNode:XML in value.keyframe)
             {
                 var fn:String = String(keyframeNode.@content);
-                var texture:AnimationTexture = new AnimationTexture();
-                texture.addFile(new File(fn));
+                var texture:AnimationTexture = new AnimationTexture(new File(fn));
 
                 var img:Image = new Image();
                 img.source = texture.image;
@@ -249,7 +259,7 @@ package org.okapp.guieditor.view.controls
                 var keyframe:TimelineFrame = new TimelineFrame();
                 keyframe.startIndex = keyframeNode.@startIndex;
                 keyframe.size = keyframeNode.@size;
-                keyframe.url = texture.file.nativePath;
+                keyframe.url = texture.nativePath;
                 keyframe.content = img;
                 _keyframes.push(keyframe);
             }

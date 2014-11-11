@@ -6,19 +6,25 @@ package org.okapp.guieditor.view
     import flash.filesystem.File;
     import flash.filesystem.FileMode;
     import flash.filesystem.FileStream;
-    import flash.geom.Point;
     import flash.net.FileFilter;
     import flash.ui.Keyboard;
 
     import mx.collections.ArrayCollection;
-    import mx.containers.Canvas;
+    import mx.collections.HierarchicalData;
+    import mx.containers.Box;
+    import mx.containers.HBox;
+    import mx.containers.TabNavigator;
     import mx.controls.FileSystemEnumerationMode;
     import mx.controls.FileSystemTree;
+    import mx.controls.Tree;
     import mx.core.ClassFactory;
     import mx.events.ListEvent;
+    import mx.managers.PopUpManager;
 
     import org.kolonitsky.alexey.StoredFieldManager;
+    import org.okapp.guieditor.model.AnimationModelVO;
     import org.okapp.guieditor.model.AnimationTexture;
+    import org.okapp.guieditor.model.DataFile;
     import org.okapp.guieditor.renderers.TextureFileRenderer;
     import org.okapp.guieditor.view.controls.AnimationCanvas;
     import org.okapp.guieditor.view.controls.Layers;
@@ -26,12 +32,13 @@ package org.okapp.guieditor.view
     import org.okapp.guieditor.view.controls.Timeline;
     import org.okapp.guieditor.view.controls.TimelineRule;
 
+    import spark.components.Button;
+    import spark.components.Group;
     import spark.components.Image;
     import spark.components.Label;
     import spark.components.List;
     import spark.components.TextArea;
     import spark.events.TextOperationEvent;
-    import spark.filters.GlowFilter;
 
     //TODO: Admin: special sign for invalid message
     public class AnimationScreen extends BaseScreen
@@ -45,46 +52,36 @@ package org.okapp.guieditor.view
 
         public static const COL_GAP:Number = 4;
 
+
+        //------------------commitP-----------
+        // selected file
+        //-----------------------------
+
+        private var _selectedFile:AnimationModelVO = null;
+        private var _selectedFileChanged:Boolean = false;
+
+        [Bindable]
+        public function get selectedFile():AnimationModelVO
+        {
+            return _selectedFile;
+        }
+
+        public function set selectedFile(value:AnimationModelVO):void
+        {
+            _selectedFile = value;
+            _selectedFileChanged = true;
+            invalidateProperties();
+        }
+
+
+        //-----------------------------
+        // Constructor
+        //-----------------------------
+
         public function AnimationScreen()
         {
             super();
             addEventListener(Event.ADDED_TO_STAGE, addedToStage);
-        }
-
-        private function addedToStage(event:Event):void
-        {
-            stage.addEventListener(KeyboardEvent.KEY_DOWN, stage_keyDownHandler);
-        }
-
-        private function stage_keyDownHandler(event:KeyboardEvent):void
-        {
-            switch (event.keyCode)
-            {
-                case Keyboard.I:
-                    var file:File = new File();
-                    file.browseForOpen("Open animation model file", [ new FileFilter("Animation model file", "xml") ]);
-                    file.addEventListener(Event.SELECT, file_selectHandler);
-                    break;
-
-                case Keyboard.E:
-
-                    var _buffer:XML = layers.toXML();
-                    taEditor.text = _buffer.toXMLString();
-                    var file:File = new File();
-                    file = file.resolvePath("app:/tmp.xml");
-                    var stream:FileStream = new FileStream();
-                    stream.open(file, FileMode.WRITE);
-                    stream.writeUTFBytes(_buffer.toString());
-                    stream.close();
-
-                    break;
-            }
-        }
-
-        private function file_selectHandler(event:Event):void
-        {
-            var file:File = event.currentTarget as File;
-
         }
 
         override protected function createChildren():void
@@ -100,6 +97,8 @@ package org.okapp.guieditor.view
                 lblXMLDirecotry.width = COL1_WIDTH;
                 lblXMLDirecotry.bottom = 0;
                 lblXMLDirecotry.setStyle("backgroundColor", 0xFFFFFF);
+                lblXMLDirecotry.setStyle("paddingTop", 5);
+                lblXMLDirecotry.setStyle("paddingLeft", 5);
                 addElement(lblXMLDirecotry);
             }
 
@@ -160,17 +159,90 @@ package org.okapp.guieditor.view
                 addElement(listTextures);
             }
 
-            if (taEditor == null)
+            if (panels == null)
             {
-                taEditor = new TextArea();
-                taEditor.top = 600;
-                taEditor.left = COL3_LEFT;
-                taEditor.right = COL_GAP;
-                taEditor.bottom = 0;
-                taEditor.setStyle("fontFamily", "_typewriter");
-                taEditor.setStyle("fontSize", 12);
-                taEditor.addEventListener(TextOperationEvent.CHANGE, editor_changeHandler);
-                addElement(taEditor);
+                panels = new TabNavigator();
+                panels.top = 600;
+                panels.left = COL3_LEFT;
+                panels.right = COL_GAP;
+                panels.bottom = 0;
+                addElement(panels);
+
+
+                if (taEditor == null)
+                {
+                    var g:Box = new Box();
+                    g.label = "Editor";
+                    g.y = 0;
+                    g.x = 0;
+                    g.percentWidth = 0;
+                    g.percentHeight= 0;
+                    panels.addChild(g);
+
+                    taEditor = new TextArea();
+                    taEditor.y = 0;
+                    taEditor.x = 0;
+                    taEditor.percentWidth = 100;
+                    taEditor.percentHeight = 100;
+                    taEditor.setStyle("fontFamily", "_typewriter");
+                    taEditor.setStyle("fontSize", 12);
+                    taEditor.addEventListener(TextOperationEvent.CHANGE, editor_changeHandler);
+                    g.addChild(taEditor);
+                }
+
+                if (treeStates == null)
+                {
+                    var hg:HBox = new HBox();
+                    hg.label = "States";
+                    hg.y = 0;
+                    hg.x = 0;
+                    hg.percentWidth = 100;
+                    hg.percentHeight = 100;
+                    panels.addChild(hg);
+
+                    var btnAddState:Button = new Button();
+                    btnAddState.label = "Add";
+                    btnAddState.width = 60;
+                    btnAddState.addEventListener(MouseEvent.CLICK, btnAddState_clickHandler);
+                    hg.addChild(btnAddState);
+
+                    var btnDeleteState:Button = new Button();
+                    btnDeleteState.label = "Delete";
+                    btnDeleteState.width = 60;
+                    btnDeleteState.addEventListener(MouseEvent.CLICK, btnDeleteState_clickHandler);
+                    hg.addChild(btnDeleteState);
+
+                    treeStates = new Tree();
+                    treeStates.y = 30;
+                    treeStates.x = 0;
+                    treeStates.percentWidth = 100;
+                    treeStates.percentHeight = 100;
+                    treeStates.showRoot = false;
+                    treeStates.labelField = "@name";
+                    treeStates.addEventListener(Event.CHANGE, treeStates_changeHandler);
+                    hg.addChild(treeStates);
+                }
+            }
+
+            if (btnOpen == null)
+            {
+                btnOpen = new Button();
+                btnOpen.top = 0;
+                btnOpen.left = COL2_WIDTH - 60 - COL_GAP - 60;
+                btnOpen.width = 60;
+                btnOpen.label = "Open";
+                btnOpen.addEventListener(MouseEvent.CLICK, btnOpen_clickHandler);
+                addElement(btnOpen);
+            }
+            if (btnCreate == null)
+            {
+                btnCreate = new Button();
+                btnCreate.top = 0;
+                btnCreate.left = COL2_WIDTH - 60;
+                btnCreate.width = 60;
+                btnCreate.label = "Save";
+                btnCreate.addEventListener(MouseEvent.CLICK, btnCreate_clickHandler);
+                addElement(btnCreate);
             }
 
             if (fsTexturesDirectory == null)
@@ -202,6 +274,107 @@ package org.okapp.guieditor.view
             }
         }
 
+        private var _currentState:XML = null;
+
+        private function treeStates_changeHandler(event:Event):void
+        {
+            var selectedState:XML = treeStates.selectedItem as XML;
+            if (selectedState)
+            {
+                default xml namespace = new Namespace(Constants.OKAPP_ANIMATION_MODEL_NAMESPACE);
+                var children:XMLList = selectedState.timeline;
+                if (children.length() == 0)
+                {
+                    var timelines:XMLList = layers.toXML();
+                    selectedState.appendChild(timelines);
+                    layers.reset();
+                }
+                else
+                {
+                    layers.fromXML(selectedState);
+                }
+            }
+
+            _currentState = selectedState;
+        }
+
+        private function btnDeleteState_clickHandler(event:MouseEvent):void
+        {
+            var selectedState:XML = treeStates.selectedItem as XML;
+            if (selectedState)
+            {
+                default xml namespace = new Namespace(Constants.OKAPP_ANIMATION_MODEL_NAMESPACE);
+                var parent:XML = selectedState.parent();
+                var chiltren:XMLList = parent.children();
+                delete chiltren[ selectedState.childIndex() ];
+            }
+        }
+
+        private function btnAddState_clickHandler(event:MouseEvent):void
+        {
+            trace("addState");
+            var popup:CreateStateDialog = PopUpManager.createPopUp(this, CreateStateDialog, true) as CreateStateDialog;
+            PopUpManager.centerPopUp(popup);
+
+            popup.addEventListener("NewState", addState_newStateHandler);
+        }
+
+        private function addState_newStateHandler(event:Event):void
+        {
+            var popup:CreateStateDialog = event.currentTarget as CreateStateDialog;
+            var stateName:String = popup.tiStateName.text;
+
+            if (stateName == null || stateName == "")
+                return;
+
+            var selectedState:* = treeStates.selectedItem;
+            if (selectedState)
+            {
+                selectedState.appendChild(<state name={stateName} />);
+            }
+            else
+            {
+                selectedFile.buffer.appendChild(<state name={stateName} />);
+            }
+        }
+
+        override protected function initializationComplete():void
+        {
+            super.initializationComplete();
+
+            if (_selectedFile == null)
+            {
+                var path:String = File.documentsDirectory.nativePath + "\\" + "tmp.xml";
+                var file:File = DataFile.createEmptyFile(path, AnimationModelVO.FILE_NAME_PATTERN, AnimationModelVO.EMPTY_FILE);
+
+                selectedFile = new AnimationModelVO(file)
+            }
+        }
+
+        override protected function commitProperties():void
+        {
+            if (_selectedFileChanged)
+            {
+                if (selectedFile.isValid)
+                {
+                    default xml namespace = new Namespace(Constants.OKAPP_ANIMATION_MODEL_NAMESPACE);
+                    treeStates.dataProvider = selectedFile.buffer;
+                }
+                _selectedFileChanged = false;
+
+            }
+        }
+
+        private function btnCreate_clickHandler(event:MouseEvent):void
+        {
+            trace("AnimationScreen.btnSave_clickHandler();");
+        }
+
+        private function btnOpen_clickHandler(event:MouseEvent):void
+        {
+            trace("AnimationScreen.btnOpen_clickHandler();");
+        }
+
         private function listTextures_doubleClickhandler(event:MouseEvent):void
         {
             var texture:AnimationTexture = listTextures.selectedItem as AnimationTexture;
@@ -210,57 +383,9 @@ package org.okapp.guieditor.view
 
             var img:Image = new Image();
             img.source = texture.image;
-            img.addEventListener(MouseEvent.ROLL_OVER, element_rollOverHandler);
-            img.addEventListener(MouseEvent.ROLL_OUT, element_rollOutHandler);
-            img.addEventListener(MouseEvent.MOUSE_DOWN, element_mouseDownHandler);
 
             layers.addImage(img, file.nativePath);
             canvas.renderFrame();
-        }
-
-        private function element_rollOverHandler(event:MouseEvent):void
-        {
-            var target:Image = event.currentTarget as Image;
-            if (target)
-                target.filters = [ new GlowFilter(0xFF0000) ];
-        }
-
-        private function element_rollOutHandler(event:MouseEvent):void
-        {
-            var target:Image = event.currentTarget as Image;
-            if (target)
-                target.filters = [ ];
-        }
-
-        private var dragObject:Image = null;
-        private var dragObjectOriginalPosition:Point = new Point();
-
-        private var dragOffset:Point = new Point();
-
-        private function element_mouseDownHandler(event:MouseEvent):void
-        {
-            dragOffset.x = event.stageX;
-            dragOffset.y = event.stageY;
-
-            var target:Image = event.currentTarget as Image;
-            if (target)
-            {
-                target.filters = [ new GlowFilter(0xFF0000) ];
-                dragObject = target;
-
-                dragObjectOriginalPosition.x = dragObject.x;
-                dragObjectOriginalPosition.y = dragObject.y;
-
-                stage.addEventListener(MouseEvent.MOUSE_UP, stage_mouseUpHandler);
-                stage.addEventListener(MouseEvent.MOUSE_MOVE, stage_mouseMoveHandler);
-            }
-        }
-
-        private function element_mouseUpHandler(event:MouseEvent):void
-        {
-            var target:Image = event.currentTarget as Image;
-            if (target)
-                target.filters = [ new GlowFilter(0xFF0000) ];
         }
 
         override protected function createPreview():void
@@ -272,6 +397,9 @@ package org.okapp.guieditor.view
         {
             trace("INFO: Animation preview removed");
         }
+
+
+
 
         //-------------------------------------------------------------------
         //
@@ -287,9 +415,15 @@ package org.okapp.guieditor.view
         private var listTextures:List;
         private var taEditor:TextArea;
 
+        private var btnOpen:Button;
+        private var btnCreate:Button;
+
         private var canvas:AnimationCanvas;
 
         private var textures:Array /* of AnimationTexture */ = [];
+
+        private var panels:TabNavigator = null;
+        private var treeStates:Tree;
 
         private function fsTexturesDirecotry_changeHandler(event:ListEvent):void
         {
@@ -305,12 +439,9 @@ package org.okapp.guieditor.view
             textures = [];
             for each (var item:File in files)
             {
-                if ( !item.exists || item.isHidden || item.isDirectory || item.isPackage || item.isSymbolicLink )
-                    continue;
-
-                var texture:AnimationTexture = new AnimationTexture();
-                texture.addFile(item);
-                textures.push(texture);
+                var texture:AnimationTexture = new AnimationTexture(item);
+                if (texture.isValid)
+                    textures.push(texture);
             }
 
             listTextures.dataProvider = new ArrayCollection(textures);
@@ -331,23 +462,50 @@ package org.okapp.guieditor.view
             imgPreview.texture = listTextures.selectedItem as AnimationTexture;
         }
 
-        private function stage_mouseUpHandler(event:MouseEvent):void
+        private function addedToStage(event:Event):void
         {
-            dragObject = null;
-
-            stage.removeEventListener(MouseEvent.MOUSE_UP, stage_mouseUpHandler);
-            stage.removeEventListener(MouseEvent.MOUSE_MOVE, stage_mouseMoveHandler);
+            addEventListener(KeyboardEvent.KEY_DOWN, stage_keyDownHandler);
         }
 
-        private function stage_mouseMoveHandler(event:MouseEvent):void
+        private function stage_keyDownHandler(event:KeyboardEvent):void
         {
-            if (dragObject)
+            var file:File;
+
+            switch (event.keyCode)
             {
-                var dx:Number = event.stageX - dragOffset.x;
-                var dy:Number = event.stageY - dragOffset.y;
-                dragObject.x = dragObjectOriginalPosition.x + dx;
-                dragObject.y = dragObjectOriginalPosition.y + dy;
+                case Keyboard.I:
+                    file = new File();
+                    file.browseForOpen("Open animation model file", [ new FileFilter("Animation model file", "*.xml") ]);
+                    file.addEventListener(Event.SELECT, file_selectHandler);
+                    break;
+
+                case Keyboard.E:
+                    var _buffer:XMLList = layers.toXML();
+                    taEditor.text = _buffer.toXMLString();
+                    file = new File(File.documentsDirectory.nativePath + "\\" + "tmp.xml");
+                    var stream:FileStream = new FileStream();
+                    stream.open(file, FileMode.WRITE);
+                    stream.writeUTFBytes(_buffer.toString());
+                    stream.close();
+                    break;
             }
+        }
+
+        private function file_selectHandler(event:Event):void
+        {
+            var file:File = event.currentTarget as File;
+
+            var stream:FileStream = new FileStream();
+            stream.open(file, FileMode.READ);
+            var strBuffer:String = stream.readUTFBytes(stream.bytesAvailable);
+            stream.close();
+
+            var xml:XML = new XML(strBuffer);
+
+            taEditor.text = strBuffer;
+
+            layers.fromXML(xml);
+
         }
     }
 }

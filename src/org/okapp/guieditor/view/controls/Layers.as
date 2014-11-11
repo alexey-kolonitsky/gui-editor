@@ -100,8 +100,9 @@ package org.okapp.guieditor.view.controls
         {
             selectedLayerIndex = 0;
             selectedFrameIndex = 0;
+            var timeline:Timeline;
 
-            var timeline:Timeline = new Timeline();
+            timeline = new Timeline();
             _layers = new <Timeline>[ timeline ];
             addChild(timeline);
 
@@ -110,9 +111,24 @@ package org.okapp.guieditor.view.controls
             addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
         }
 
-        public function toXML():XML
+        public function reset():void
         {
-            var result:XML = <animation />;
+            selectedLayerIndex = 0;
+            selectedFrameIndex = 0;
+
+            playHead.playHeadHeight = 1;
+
+            for each (timeline in _layers)
+                removeChild(timeline);
+
+            var timeline:Timeline = new Timeline();
+            _layers = new <Timeline>[ timeline ];
+            addChild(timeline);
+        }
+
+        public function toXML():XMLList
+        {
+            var result:XMLList = new XMLList();
 
             for each (var timeline:Timeline in _layers)
                 result.appendChild(timeline.toXML());
@@ -168,6 +184,8 @@ package org.okapp.guieditor.view.controls
 
                         _layers.splice(selectedLayerIndex, 0, timeline);
                         addChildAt(timeline, selectedLayerIndex);
+
+                        playHead.playHeadHeight = _layers.length;
 
                         invalidateSize();
                     }

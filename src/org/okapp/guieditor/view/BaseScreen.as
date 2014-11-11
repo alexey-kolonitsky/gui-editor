@@ -2,6 +2,8 @@ package org.okapp.guieditor.view
 {
     import flash.events.Event;
 
+    import org.okapp.guieditor.model.DataFile;
+
     import spark.components.Group;
 
     import starling.core.Starling;
@@ -31,6 +33,11 @@ package org.okapp.guieditor.view
             invalidateProperties();
         }
 
+        //-----------------------------
+        // DataFile
+        //-----------------------------
+
+        protected var _dataFile:DataFile;
 
         //-----------------------------
         // Constructor

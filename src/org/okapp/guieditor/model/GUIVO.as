@@ -8,6 +8,8 @@ package org.okapp.guieditor.model
 
     public class GUIVO extends DataFile
     {
+        public static const GUI_FILE_NAME_TEMPLATE:String = "window_#.xml";
+        public static const GUI_EMPTY_FILE_CONTENT:String = '<gui xmlns="http://wwww.okapp.ru/gui/0.1" xmlns:of="com.okapp.pirates.ui.controls">\n<of:Text text="Hello world!" /></gui>';
 
         //-----------------------------
         // Constructor
