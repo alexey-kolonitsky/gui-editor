@@ -1,5 +1,11 @@
 package org.okapp.guieditor.view.controls
 {
+    import com.okapp.pirates.ui.core.IUIElement;
+
+    import flash.events.Event;
+
+    import mx.core.UIComponent;
+
     import mx.graphics.SolidColor;
 
     import org.okapp.guieditor.model.AnimationTexture;
@@ -26,7 +32,6 @@ package org.okapp.guieditor.view.controls
         }
 
 
-        private var _image:Image;
         private var _rect:Rect;
 
         public function TexturePreview()
@@ -50,29 +55,28 @@ package org.okapp.guieditor.view.controls
                 _rect.fill = new SolidColor(0xAAAAAA);
                 addElement(_rect);
             }
-
-
-            if (_image == null)
-            {
-                _image = new Image();
-                _image.x = 0;
-                _image.y = 0;
-                _image.percentWidth = 100;
-                _image.percentHeight = 100;
-                addElement(_image);
-            }
         }
+
+        private var currentPreview:UIComponent = null;
 
         override protected function commitProperties():void
         {
             super.commitProperties();
 
-            if (_textureChanged && _image)
+            if (_textureChanged)
             {
+                if (currentPreview)
+                    removeElement(currentPreview);
+
                 if (_texture)
-                    _image.source = _texture.image;
-                else
-                    _image.source = null;
+                {
+                    if (_texture.frame)
+                    {
+                        currentPreview = _texture.frame;
+                        addElement(currentPreview);
+                    }
+                }
+
 
                 _textureChanged = false;
             }

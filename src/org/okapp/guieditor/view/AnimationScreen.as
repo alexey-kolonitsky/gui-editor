@@ -78,6 +78,7 @@ package org.okapp.guieditor.view
 
             _autoSaveTimer = new Timer(Constants.AUTOSAVE_DELAY);
             _autoSaveTimer.addEventListener(TimerEvent.TIMER, autoSaveTimer_timerHandler);
+            _autoSaveTimer.start();
         }
 
         private function autoSaveTimer_timerHandler(event:TimerEvent):void
@@ -291,10 +292,13 @@ package org.okapp.guieditor.view
             {
                 _editor.dataFile = selectedFile;
                 _animationStatePanel.selectedFile = selectedFile;
-                _selectedFileChanged = false;
 
-                if (selectedFile)
-                    _autoSaveTimer.start();
+                default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
+                var xml:XMLList = _selectedFile.buffer.state;
+                if (xml.length())
+                    loadLayersFromXML(xml[0]);
+
+                _selectedFileChanged = false;
             }
         }
 
@@ -360,9 +364,14 @@ package org.okapp.guieditor.view
             for each (var node:XML in timelines)
                 state.appendChild(node);
 
+            loadLayersFromXML(event.newState);
+        }
+
+        private function loadLayersFromXML(newState:XML):void
+        {
+            default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
             _layers.clear();
 
-            var newState:XML = event.newState;
             if (newState && newState.timeline.length() > 0)
                 _layers.loadFromXML(newState);
             else

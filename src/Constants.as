@@ -22,6 +22,7 @@ package
         // XML NameSpaces
         //-----------------------------
 
+        public static const DEFAULT_ANIMATION_STATE:String = "default";
         public static const OKAPP_ANIMATION_MODEL_NS:Namespace = new Namespace(OKAPP_ANIMATION_MODEL_NAMESPACE);
         public static const OKAPP_ANIMATION_MODEL_NAMESPACE:String = "http://wwww.okapp.ru/animation/0.1";
         public static const OKAPP_ANIMATION_MODEL_FILE_EXTENSION:String = "xml";

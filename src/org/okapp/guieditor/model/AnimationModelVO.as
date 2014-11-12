@@ -5,7 +5,10 @@ package org.okapp.guieditor.model
     public class AnimationModelVO extends DataFile
     {
         public static const FILE_NAME_PATTERN:String = "animation_#.xml";
-        public static const EMPTY_FILE:String = '<model xmlns="http://wwww.okapp.ru/animation/0.1">\n<state name="default" /></model>';
+        public static const EMPTY_FILE:XML =
+            <model xmlns={Constants.OKAPP_ANIMATION_MODEL_NAMESPACE}>
+                <state name={Constants.DEFAULT_ANIMATION_STATE} />
+            </model>;
 
         public function AnimationModelVO (file:File)
         {

@@ -67,7 +67,10 @@ package org.okapp.guieditor.view.controls
 
         public function get selectedLayer():Timeline
         {
-            if (_selectedLayerIndex != -1)
+            if (_selectedLayerIndex == -1)
+                return null;
+
+            if (_selectedLayerIndex in _layers)
                 return _layers[_selectedLayerIndex];
 
             return null
@@ -184,8 +187,6 @@ package org.okapp.guieditor.view.controls
                     else
                     {
                         timeline = new Timeline();
-                        timeline.frameIndex = _currentIndex;
-
                         frame = timeline.getKeyframe(0);
                         frame.content = image;
                         frame.url = nativePath;
@@ -308,11 +309,7 @@ package org.okapp.guieditor.view.controls
 
             if (_currentIndexChanged)
             {
-                for each (var timeline:Timeline in _layers)
-                    timeline.frameIndex = _currentIndex;
-
                 playHead.x = Timeline.FRAME_WIDTH * _currentIndex + 1;
-
                 _currentIndexChanged = false;
             }
         }
@@ -482,7 +479,7 @@ package org.okapp.guieditor.view.controls
             }
 
             var timeline:Timeline = _layers[_selectedLayerIndex];
-            timeline.addFrame();
+            timeline.addFrame(_selectedFrameIndex, 1);
 
             if (timeline.size > _size)
                 _size = timeline.size;
@@ -520,7 +517,7 @@ package org.okapp.guieditor.view.controls
         {
             var newIndex:int = currentIndex + delta;
 
-            if (newIndex < 0)
+            if (newIndex <= 0)
             {
                 currentIndex = 0;
             }

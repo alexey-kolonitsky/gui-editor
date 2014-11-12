@@ -150,7 +150,6 @@ package org.okapp.guieditor.view.controls
                     _selectedState = null;
                 }
                 _selectedFileChanged = false;
-                dispatchEvent(new AnimationModelEvent(AnimationModelEvent.CHANGE_STATE, _selectedState))
             }
         }
 

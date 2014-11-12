@@ -21,27 +21,6 @@ package org.okapp.guieditor.view.controls
         public static const SELECTED_FRAME_COLOR:uint = 0x990000;
         public static const TICK_COLOR:uint = 0x999999;
 
-
-        //-----------------------------
-        // frame index
-        //-----------------------------
-
-        private var _frameIndex:int = 0;
-        private var _frameIndexChanged:Boolean = false;
-
-        public function get frameIndex():int
-        {
-            return _frameIndex;
-        }
-
-        public function set frameIndex(value:int):void
-        {
-            _frameIndex = value;
-            _frameIndexChanged = true;
-            invalidateProperties();
-            invalidateDisplayList();
-        }
-
         /**
          * Set new keyframe at frameIndex position on timeline
          */
@@ -86,7 +65,7 @@ package org.okapp.guieditor.view.controls
         /**
          * Add size to current keyframe.
          */
-        public function addFrame(num:int = 1):void
+        public function addFrame(frameIndex:int, num:int = 1):void
         {
             var currentFrame:TimelineFrame;
             if (frameIndex > size)
@@ -225,7 +204,7 @@ package org.okapp.guieditor.view.controls
                 if ( keyframe.isEmpty )
                     continue;
 
-                var img:Image = keyframe.content;
+                var img:UIComponent = keyframe.content;
                 var m:Matrix = img.transform.matrix;
                 var strTransform:String = m.a + ", " + m.b + ", " + m.c + ", " + m.d + ", " + m.tx + ", " + m.ty;
 
@@ -243,6 +222,8 @@ package org.okapp.guieditor.view.controls
 
         public function fromXML(value:XML):void
         {
+            default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
+
             if (value.keyframe.length() == 0)
                 return;
 
@@ -253,20 +234,18 @@ package org.okapp.guieditor.view.controls
                 var fn:String = String(keyframeNode.@content);
                 var texture:AnimationTexture = new AnimationTexture(new File(fn));
 
+
                 if ( !texture.isValid )
                 {
                     trace("Invalid loaded file: " + fn);
                     return;
                 }
 
-                var img:Image = new Image();
-                img.source = texture.image;
-
                 var keyframe:TimelineFrame = new TimelineFrame();
                 keyframe.startIndex = keyframeNode.@startIndex;
                 keyframe.size = keyframeNode.@size;
                 keyframe.url = texture.nativePath;
-                keyframe.content = img;
+                keyframe.texture = texture;
                 _keyframes.push(keyframe);
             }
         }

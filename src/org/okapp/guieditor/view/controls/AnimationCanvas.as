@@ -196,19 +196,12 @@ package org.okapp.guieditor.view.controls
             for (var i:int = 0; i < n; i++)
             {
                 var timeline:Timeline = layers.layers[i];
+                if (index >= timeline.size)
+                    continue;
+
                 var frame:TimelineFrame = timeline.getKeyframe(index);
                 if (frame && frame.content)
-                {
-                    var img:Image = frame.content;
-                    var ldr:Loader = img.source as Loader;
-                    var bm:Bitmap = ldr.content as Bitmap;
-                    if (bm)
-                    {
-                        graphics.beginBitmapFill(bm.bitmapData, new Matrix());
-                        graphics.drawRect(100, 100, bm.width, bm.height);
-                        graphics.endFill();
-                    }
-                }
+                    addChild(frame.content);
             }
 
             lastRenderedFrame = index;
