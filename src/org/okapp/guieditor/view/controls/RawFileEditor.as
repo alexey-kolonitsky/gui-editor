@@ -43,15 +43,17 @@ package org.okapp.guieditor.view.controls
         {
             if (dataFile)
             {
-                lblTitle.text = _dataFile.file.nativePath;
+
 
                 if (_dataFile.isValid)
                 {
                     taEditor.text = _dataFile.strBuffer;
+                    lblTitle.text = _dataFile.file.nativePath;
                 }
                 else
                 {
                     taEditor.text = _dataFile.log;
+                    lblTitle.text = "no file";
                 }
             }
             else

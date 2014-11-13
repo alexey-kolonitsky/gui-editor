@@ -1,25 +1,87 @@
-package org.okapp.guieditor.view.controls
+package org.okapp.guieditor.view.controls.timeline
 {
-    import flash.events.KeyboardEvent;
     import flash.filesystem.File;
     import flash.geom.Matrix;
-    import flash.ui.Keyboard;
+
+    import mx.controls.Label;
 
     import mx.core.UIComponent;
 
     import org.okapp.guieditor.model.AnimationTexture;
 
-    import spark.components.Image;
-
     public class Timeline extends UIComponent
     {
+        /**
+         * Left margin used to display layer name
+         */
+        public static const LEFT_MARGIN:Number = 80;
+
         public static const FRAME_WIDTH:Number = 8;
         public static const FRAME_HEIGHT:Number = 16;
 
         public static const FILL_FRAME_COLOR:uint = 0x666666;
         public static const EMPTY_FRAME_COLOR:uint = 0xFFFFFF;
-        public static const SELECTED_FRAME_COLOR:uint = 0x990000;
         public static const TICK_COLOR:uint = 0x999999;
+
+
+        //-----------------------------
+        // color
+        //-----------------------------
+
+        private var _color:uint = 0x000000;
+        private var _colorChanged:Boolean = false;
+
+        public function get color():uint
+        {
+            return _color;
+        }
+
+        public function set color(value:uint):void
+        {
+            _color = value;
+            _colorChanged = true;
+            invalidateDisplayList();
+        }
+
+
+        //-----------------------------
+        // isVisible
+        //-----------------------------
+
+        private var _isVisible:Boolean = true;
+        private var _isVisibleChanged:Boolean = false;
+
+        public function get isVisible():Boolean
+        {
+            return _isVisible;
+        }
+
+        public function set isVisible(value:Boolean):void
+        {
+            _isVisible = value;
+            _isVisibleChanged = true;
+            invalidateDisplayList();
+        }
+
+
+        //-----------------------------
+        // layerName
+        //-----------------------------
+
+        private var _layerName:String = "noname";
+        private var _layerNameChanged:Boolean = true;
+
+        public function get layerName():String
+        {
+            return _layerName;
+        }
+
+        public function set layerName(value:String):void
+        {
+            _layerName = value;
+            _layerNameChanged = true;
+            invalidateProperties();
+        }
 
         /**
          * Set new keyframe at frameIndex position on timeline
@@ -84,16 +146,6 @@ package org.okapp.guieditor.view.controls
             invalidateDisplayList();
         }
 
-        public function updateStartIndex():void
-        {
-            var startIndex:int = 0;
-            for each (var keyframe:TimelineFrame in _keyframes)
-            {
-                keyframe.startIndex = startIndex;
-                startIndex += keyframe.size;
-            }
-        }
-
 
         //-----------------------------
         // frames
@@ -101,6 +153,9 @@ package org.okapp.guieditor.view.controls
 
         private var _keyframes:Vector.<TimelineFrame>;
 
+        /**
+         * List of keyframes
+         */
         public function get keyframes():Vector.<TimelineFrame>
         {
             return _keyframes;
@@ -111,6 +166,9 @@ package org.okapp.guieditor.view.controls
         // size
         //-----------------------------
 
+        /**
+         * count of keyframes in timeline
+         */
         public function get size():int
         {
             if (_keyframes.length)
@@ -138,6 +196,11 @@ package org.okapp.guieditor.view.controls
             invalidateDisplayList();
         }
 
+        /**
+         *
+         * @param frameIndex
+         * @return
+         */
         public function getFrameType(frameIndex:int):String
         {
             if (frameIndex > size)
@@ -169,33 +232,9 @@ package org.okapp.guieditor.view.controls
             return result;
         }
 
-        override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
-        {
-            super.updateDisplayList(unscaledWidth, unscaledHeight);
-
-            graphics.clear();
-
-            var n:int = _keyframes.length;
-            for (var i:int = 0; i < n; i++)
-            {
-                var frame:TimelineFrame = _keyframes[i];
-                var frameX:Number = frame.startIndex * FRAME_WIDTH;
-
-                graphics.lineStyle(1, 0x000000);
-
-                graphics.beginFill(frame.isEmpty ? EMPTY_FRAME_COLOR : FILL_FRAME_COLOR);
-                graphics.drawRect(frameX, 0, FRAME_WIDTH * frame.size, FRAME_HEIGHT);
-
-                graphics.beginFill(frame.isEmpty ? EMPTY_FRAME_COLOR : 0x000000);
-                graphics.drawCircle(frameX + FRAME_WIDTH / 2, FRAME_HEIGHT / 2, FRAME_WIDTH / 4);
-            }
-
-            graphics.endFill();
-        }
-
         public function toXML():XML
         {
-            var result:XML = <timeline />;
+            var result:XML = <timeline color={_color} visible={_isVisible} name={_layerName} />;
 
             var n:int = _keyframes.length;
             for (var i:int = 0; i < n; i++)
@@ -220,12 +259,28 @@ package org.okapp.guieditor.view.controls
             return result;
         }
 
+        /**
+         *
+         * @param value
+         */
         public function fromXML(value:XML):void
         {
             default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
 
             if (value.keyframe.length() == 0)
                 return;
+
+            _isVisible = true;
+            if ("@visible" in value)
+                _isVisible = String(value.@visible) == "true";
+
+            _color = 0x000000;
+            if ("@color" in value)
+                _color = parseInt(String(value.@color), 16);
+
+            _layerName = "noname";
+            if ("@name" in value)
+                _layerName = String(value.@name);
 
             _keyframes.length = 0;
 
@@ -247,6 +302,108 @@ package org.okapp.guieditor.view.controls
                 keyframe.url = texture.nativePath;
                 keyframe.texture = texture;
                 _keyframes.push(keyframe);
+            }
+
+            invalidateProperties();
+            invalidateDisplayList();
+        }
+
+
+
+
+        //-------------------------------------------------------------------
+        // UIComponent implementation
+        //-------------------------------------------------------------------
+
+        override protected function createChildren():void
+        {
+            super.createChildren();
+
+            if (lblName == null)
+            {
+                lblName = new Label();
+                lblName.y = 0;
+                lblName.x = FRAME_HEIGHT;
+                lblName.width = LEFT_MARGIN;
+                lblName.height = FRAME_HEIGHT;
+                addChild(lblName);
+            }
+        }
+
+        override protected function commitProperties():void
+        {
+            super.commitProperties();
+
+            if (lblName && _layerNameChanged)
+            {
+                lblName.text = _layerName;
+                _layerNameChanged = false;
+            }
+        }
+
+        override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+        {
+            super.updateDisplayList(unscaledWidth, unscaledHeight);
+
+            var frameH2:int = FRAME_HEIGHT >> 1;
+            var frameW2:int = FRAME_WIDTH >> 1;
+
+            graphics.clear();
+            graphics.beginFill(Constants.COLOR_INTERFACE_INACTIVE);
+            graphics.drawRect(0, 0, LEFT_MARGIN, FRAME_HEIGHT);
+            graphics.endFill();
+
+            if (_isVisible)
+                graphics.beginFill(_color);
+            else
+                graphics.lineStyle(1, _color);
+
+            // draw visible marker
+            graphics.drawCircle(frameH2, frameH2, frameH2 >> 1);
+            graphics.lineStyle();
+            graphics.endFill();
+
+            // draw keyframes
+            var n:int = _keyframes.length;
+            for (var i:int = 0; i < n; i++)
+            {
+                var frame:TimelineFrame = _keyframes[i];
+                var frameX:Number = LEFT_MARGIN + frame.startIndex * FRAME_WIDTH;
+
+                graphics.lineStyle(1, 0x000000);
+
+                graphics.beginFill(frame.isEmpty ? EMPTY_FRAME_COLOR : FILL_FRAME_COLOR);
+                graphics.drawRect(frameX, 0, FRAME_WIDTH * frame.size, FRAME_HEIGHT);
+
+                graphics.beginFill(frame.isEmpty ? EMPTY_FRAME_COLOR : 0x000000);
+                graphics.drawCircle(frameX + frameW2, frameH2, frameW2 >> 1);
+            }
+
+            graphics.lineStyle(1, 0x000000);
+            graphics.endFill();
+        }
+
+
+        //-------------------------------------------------------------------
+        //
+        // Private
+        //
+        //-------------------------------------------------------------------
+
+        private var lblName:Label = null;
+
+
+
+        /**
+         *
+         */
+        private function updateStartIndex():void
+        {
+            var startIndex:int = 0;
+            for each (var keyframe:TimelineFrame in _keyframes)
+            {
+                keyframe.startIndex = startIndex;
+                startIndex += keyframe.size;
             }
         }
     }

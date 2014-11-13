@@ -7,6 +7,12 @@ package
 
         public static const AUTOSAVE_DELAY:Number = 1000;
 
+        public static const COLOR_INTERFACE_INACTIVE:uint = 0xEFEFEF;
+        public static const COLOR_INTERFACE_HOVER:uint = 0x9DC1F5;
+        public static const COLOR_INTERFACE_SELECTED:uint = 0x4C8CE6;
+
+        public static const LAYER_NAME_PATTERN:String = "Layer #";
+        public static const LAYER_COLOR:Vector.<uint> = new <uint>[0xF0F8FF, 0xFF4500, 0x8B0000, 0xFFD700, 0xA52A2A, 0xEE82EE, 0x00FFFF];
 
         //-----------------------------
         // Shared Object
@@ -29,5 +35,6 @@ package
 
         public static const OKAPP_GUI_NAMESPACE:String = "http://wwww.okapp.ru/gui/0.1";
         public static const OKAPP_GUI_FILE_EXTENSION:String = "xml";
+
     }
 }

@@ -1,5 +1,6 @@
-package org.okapp.guieditor.view.controls
+package org.okapp.guieditor.view.controls.timeline
 {
+    import org.okapp.guieditor.view.controls.*;
     import mx.core.UIComponent;
 
     public class TimelinePlayHead extends UIComponent

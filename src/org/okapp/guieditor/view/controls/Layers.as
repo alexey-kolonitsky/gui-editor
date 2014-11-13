@@ -5,16 +5,37 @@ package org.okapp.guieditor.view.controls
     import flash.events.MouseEvent;
     import flash.geom.Rectangle;
     import flash.ui.Keyboard;
+    import flash.utils.Timer;
+
+    import mx.controls.Button;
 
     import mx.core.UIComponent;
+
+    import org.okapp.guieditor.model.AnimationTexture;
+
+    import org.okapp.guieditor.view.controls.timeline.Timeline;
+    import org.okapp.guieditor.view.controls.timeline.TimelineFrame;
+    import org.okapp.guieditor.view.controls.timeline.TimelinePlayHead;
+    import org.okapp.guieditor.view.controls.timeline.TimelineRule;
+    import org.okapp.guieditor.view.controls.timeline.VisualFrame;
 
     import spark.components.Image;
     import spark.filters.DropShadowFilter;
 
     public class Layers extends UIComponent
     {
-        public static const HOVER_FRAME_COLOR:uint = 0x9DC1F5;
-        public static const SELECTED_FRAME_COLOR:uint = 0x4C8CE6;
+
+        //-----------------------------
+        // btnPlayPause
+        //-----------------------------
+
+        private var _btnPlayPause:Button;
+
+        public function get btnPlayPause():Button
+        {
+            return _btnPlayPause;
+        }
+
 
         //-----------------------------
         // current index
@@ -95,6 +116,16 @@ package org.okapp.guieditor.view.controls
 
         public function Layers()
         {
+            // btnPlayPause used fom AnimationCanvas component
+            _btnPlayPause = new Button();
+            _btnPlayPause.label = "►";
+            _btnPlayPause.toolTip = "play";
+            _btnPlayPause.x = 0;
+            _btnPlayPause.y = 0;
+            _btnPlayPause.width = 40;
+            _btnPlayPause.height = TimelineRule.DEFAULT_HEIGHT;
+            addChild(_btnPlayPause);
+
             createEmptyLayer();
 
             filters = [ new DropShadowFilter(4, 90, 0x666666, 0.5) ];
@@ -119,6 +150,7 @@ package org.okapp.guieditor.view.controls
             for each (var timeline:Timeline in _layers)
                 removeChild(timeline);
 
+            _size = 0;
             _layers.length = 0;
             playHead.playHeadHeight = 1;
         }
@@ -147,11 +179,15 @@ package org.okapp.guieditor.view.controls
 
                 _layers.push(timeline);
                 addChildAt(timeline, numChildren - 1);
+
+                if (timeline.size > _size)
+                    _size = timeline.size
             }
 
             _frameContentChanged = true;
 
-            selectedLayer.invalidateDisplayList();
+            if (selectedLayer)
+                selectedLayer.invalidateDisplayList();
 
             currentIndex = 0;
 
@@ -159,7 +195,7 @@ package org.okapp.guieditor.view.controls
             invalidateSize();
         }
 
-        public function addImage(image:Image, nativePath:String):void
+        public function addTexture(texture:AnimationTexture):void
         {
             var timeline:Timeline, frame:TimelineFrame;
             if (selectedLayer == null)
@@ -173,23 +209,31 @@ package org.okapp.guieditor.view.controls
             {
                 case TimelineFrame.TYPE_FRAME:
                     frame = addKeyframe();
-                    frame.content = image;
-                    frame.url = nativePath;
+                    frame.texture = texture;
+                    frame.url = texture.nativePath;
                     break;
 
                 case TimelineFrame.TYPE_KEYFRAME:
                     frame = selectedLayer.getKeyframe(_currentIndex);
                     if ( frame.isEmpty )
                     {
-                        frame.content = image;
-                        frame.url = nativePath;
+                        frame.texture = texture;
+                        frame.url = texture.nativePath;
                     }
                     else
                     {
-                        timeline = new Timeline();
-                        frame = timeline.getKeyframe(0);
-                        frame.content = image;
-                        frame.url = nativePath;
+                        timeline = createTimeline();
+
+                        if (_selectedFrameIndex > 0)
+                        {
+
+                        }
+                        else
+                        {
+                            frame = timeline.getKeyframe(0);
+                            frame.texture = texture;
+                            frame.url = texture.nativePath;
+                        }
 
                         _selectedLayerIndex++;
 
@@ -204,8 +248,8 @@ package org.okapp.guieditor.view.controls
 
                 case TimelineFrame.TYPE_NOT_EXISTS:
                     frame = addKeyframe();
-                    frame.content = image;
-                    frame.url = nativePath;
+                    frame.texture = texture;
+                    frame.url = texture.file.nativePath;
                     break;
 
                 default:
@@ -221,6 +265,20 @@ package org.okapp.guieditor.view.controls
             invalidateSize();
         }
 
+        private function createTimeline():Timeline
+        {
+            var n:int = 0;
+            if (_layers)
+                n = _layers.length + 1;
+
+            var colorIndex:int = n % Constants.LAYER_COLOR.length;
+            var result:Timeline = new Timeline();
+            result.layerName = Constants.LAYER_NAME_PATTERN.replace("#", n);
+            result.color = Constants.LAYER_COLOR[colorIndex];
+
+            return result;
+        }
+
         /**
          * Create
          */
@@ -229,14 +287,20 @@ package org.okapp.guieditor.view.controls
             _selectedLayerIndex = 0;
             _selectedFrameIndex = 0;
 
-            var timeline:Timeline = new Timeline();
+            var timeline:Timeline = createTimeline();
             _layers = new <Timeline>[ timeline ];
-            addChild(timeline);
+            addChildAt(timeline, 0);
 
             currentIndex = 0;
         }
 
-
+        public function nextFrame():void
+        {
+            if (currentIndex + 1 >= _size)
+                currentIndex = 0;
+            else
+                movePlayheadBy(1);
+        }
 
 
         //-------------------------------------------------------------------
@@ -258,8 +322,6 @@ package org.okapp.guieditor.view.controls
         private var selectedFrame:VisualFrame;
 
 
-
-
         //-------------------------------------------------------------------
         // Override Component API
         //-------------------------------------------------------------------
@@ -271,33 +333,33 @@ package org.okapp.guieditor.view.controls
             if (rule == null)
             {
                 rule = new TimelineRule();
-                rule.left = 0;
+                rule.left = Timeline.LEFT_MARGIN;
                 rule.right = 0;
                 rule.top = 0;
                 rule.height = TimelineRule.DEFAULT_HEIGHT;
 
-                addChild(rule);
+                addChildAt(rule, 0);
             }
 
             if (playHead == null)
             {
                 playHead = new TimelinePlayHead();
                 playHead.top = 0;
-                playHead.left = 0;
+                playHead.left = Timeline.LEFT_MARGIN;
                 playHead.bottom = 0;
                 addChild(playHead);
             }
 
             if (hoverFrame == null)
             {
-                hoverFrame = new VisualFrame(HOVER_FRAME_COLOR);
+                hoverFrame = new VisualFrame(Constants.COLOR_INTERFACE_HOVER);
                 hoverFrame.visible = false;
                 addChild(hoverFrame);
             }
 
             if (selectedFrame == null)
             {
-                selectedFrame = new VisualFrame(SELECTED_FRAME_COLOR);
+                selectedFrame = new VisualFrame(Constants.COLOR_INTERFACE_SELECTED);
                 selectedFrame.visible = false;
                 addChild(selectedFrame);
             }
@@ -309,7 +371,7 @@ package org.okapp.guieditor.view.controls
 
             if (_currentIndexChanged)
             {
-                playHead.x = Timeline.FRAME_WIDTH * _currentIndex + 1;
+                playHead.x = Timeline.LEFT_MARGIN + Timeline.FRAME_WIDTH * _currentIndex + 1;
                 _currentIndexChanged = false;
             }
         }
@@ -324,7 +386,7 @@ package org.okapp.guieditor.view.controls
                 if (maxLenght < _layers[i].keyframes.length)
                     maxLenght = _layers[i].keyframes.length;
 
-            measuredWidth = maxLenght * Timeline.FRAME_WIDTH;
+            measuredWidth = maxLenght * Timeline.FRAME_WIDTH + Timeline.LEFT_MARGIN;
             measuredHeight = _layers.length * Timeline.FRAME_HEIGHT;
         }
 
@@ -338,7 +400,7 @@ package org.okapp.guieditor.view.controls
             }
             else
             {
-                hoverFrame.x = hoverFrameIndex * Timeline.FRAME_WIDTH;
+                hoverFrame.x = hoverFrameIndex * Timeline.FRAME_WIDTH + Timeline.LEFT_MARGIN;
                 hoverFrame.y = hoverLayerIndex * Timeline.FRAME_HEIGHT + TimelineRule.DEFAULT_HEIGHT;
                 hoverFrame.visible = true;
             }
@@ -349,7 +411,7 @@ package org.okapp.guieditor.view.controls
             }
             else
             {
-                selectedFrame.x = _selectedFrameIndex * Timeline.FRAME_WIDTH;
+                selectedFrame.x = _selectedFrameIndex * Timeline.FRAME_WIDTH + Timeline.LEFT_MARGIN;
                 selectedFrame.y = _selectedLayerIndex * Timeline.FRAME_HEIGHT + TimelineRule.DEFAULT_HEIGHT;
                 selectedFrame.visible = true;
             }
@@ -380,6 +442,7 @@ package org.okapp.guieditor.view.controls
 
             if (rule)
             {
+                rule.left = Timeline.LEFT_MARGIN;
                 rule.explicitWidth = unscaledWidth;
                 rule.explicitHeight = unscaledHeight;
                 rule.invalidateDisplayList();
@@ -410,11 +473,11 @@ package org.okapp.guieditor.view.controls
 
         private function stage_mouseMoveHandler(event:MouseEvent):void
         {
-            hoverFrameIndex = -1;
-            hoverLayerIndex = -1;
+            hoverFrameIndex = 0;
+            hoverLayerIndex = 0;
 
             var b:Rectangle = this.getBounds(stage);
-            var left:Number = b.left;
+            var left:Number = b.left + Timeline.LEFT_MARGIN;
             var right:Number = b.right;
             var top:Number = b.top + TimelineRule.DEFAULT_HEIGHT;
             var bottom:Number = top + _layers.length * (Timeline.FRAME_HEIGHT + 1);
@@ -513,22 +576,29 @@ package org.okapp.guieditor.view.controls
             }
         }
 
-        private function movePlayheadBy(delta:int):void
+        private function movePlayheadBy(delta:int, loop:Boolean = false):void
         {
             var newIndex:int = currentIndex + delta;
 
             if (newIndex <= 0)
             {
-                currentIndex = 0;
+                if (loop)
+                    currentIndex += size;
+                else
+                    currentIndex = 0;
             }
             else if (newIndex >= size)
             {
-                currentIndex = size -1;
+                if (loop)
+                    currentIndex -= size;
+                else
+                    currentIndex = size -1;
             }
             else
             {
                 currentIndex = newIndex;
             }
         }
+
     }
 }

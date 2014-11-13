@@ -1,4 +1,4 @@
-package org.okapp.guieditor.view.controls
+package org.okapp.guieditor.view.controls.editor
 {
     import mx.core.UIComponent;
 

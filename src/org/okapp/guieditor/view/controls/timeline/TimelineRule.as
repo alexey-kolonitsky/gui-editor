@@ -1,11 +1,10 @@
-package org.okapp.guieditor.view.controls
+package org.okapp.guieditor.view.controls.timeline
 {
     import mx.controls.Label;
     import mx.core.UIComponent;
 
     public class TimelineRule extends UIComponent
     {
-        public static const BG_COLOR:uint = 0xEFEFEF;
         public static const TICK_COLOR:uint = 0x666666;
 
         public static const DEFAULT_FPS:Number = 30;
@@ -28,7 +27,7 @@ package org.okapp.guieditor.view.controls
 
             // Draw background
             graphics.clear();
-            graphics.beginFill(BG_COLOR);
+            graphics.beginFill(Constants.COLOR_INTERFACE_INACTIVE);
             graphics.drawRect(0, 0, w, h);
 
             // Draw tick

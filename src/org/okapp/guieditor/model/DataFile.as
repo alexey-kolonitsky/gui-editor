@@ -39,8 +39,13 @@ package org.okapp.guieditor.model
                 newFile = new File(fileName);
             }
 
+            return createFile(newFile, emptyFileContent);
+        }
+
+        public static function createFile(newFile:File, content:String):File
+        {
             var barr:ByteArray = new ByteArray();
-            barr.writeUTF(emptyFileContent);
+            barr.writeUTF(content);
 
             var stream:FileStream = new FileStream();
             stream.open(newFile, FileMode.WRITE);

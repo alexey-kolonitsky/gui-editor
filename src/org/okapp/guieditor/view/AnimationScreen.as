@@ -26,8 +26,8 @@ package org.okapp.guieditor.view
     import org.okapp.guieditor.view.controls.Layers;
     import org.okapp.guieditor.view.controls.RawFileEditor;
     import org.okapp.guieditor.view.controls.TexturePreview;
-    import org.okapp.guieditor.view.controls.Timeline;
-    import org.okapp.guieditor.view.controls.TimelineRule;
+    import org.okapp.guieditor.view.controls.timeline.Timeline;
+    import org.okapp.guieditor.view.controls.timeline.TimelineRule;
 
     import spark.components.Button;
     import spark.components.Image;
@@ -186,7 +186,7 @@ package org.okapp.guieditor.view
 
             if (_panels == null)
             {
-                _panels = new HBox();
+                _panels = new TabNavigator();
                 _panels.top = 600;
                 _panels.left = COL3_LEFT;
                 _panels.right = COL_GAP;
@@ -236,6 +236,19 @@ package org.okapp.guieditor.view
                 btnCreateFile.label = "Create";
                 btnCreateFile.addEventListener(MouseEvent.CLICK, btnCreate_clickHandler);
                 addElement(btnCreateFile);
+            }
+
+
+
+            if (btnSaveFile == null)
+            {
+                btnSaveFile = new Button();
+                btnSaveFile.top = 0;
+                btnSaveFile.left =  COL2_WIDTH - 60 - COL_GAP - 60 - COL_GAP - 60;
+                btnSaveFile.width = 60;
+                btnSaveFile.label = "Save";
+                btnSaveFile.addEventListener(MouseEvent.CLICK, btnSave_clickHandler);
+                addElement(btnSaveFile);
             }
 
             if (fsTexturesDirectory == null)
@@ -293,10 +306,13 @@ package org.okapp.guieditor.view
                 _editor.dataFile = selectedFile;
                 _animationStatePanel.selectedFile = selectedFile;
 
-                default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
-                var xml:XMLList = _selectedFile.buffer.state;
-                if (xml.length())
-                    loadLayersFromXML(xml[0]);
+                if (selectedFile.isValid)
+                {
+                    default xml namespace = Constants.OKAPP_ANIMATION_MODEL_NS;
+                    var xml:XMLList = _selectedFile.buffer.state;
+                    if (xml.length())
+                        loadLayersFromXML(xml[0]);
+                }
 
                 _selectedFileChanged = false;
             }
@@ -321,10 +337,11 @@ package org.okapp.guieditor.view
 
         private var btnOpenFile:Button;
         private var btnCreateFile:Button;
+        private var btnSaveFile:Button;
 
         private var _canvas:AnimationCanvas;
 
-        private var _panels:HBox = null;
+        private var _panels:TabNavigator = null;
         private var _editor:RawFileEditor;
         private var _animationStatePanel:AnimationStatePanel;
 
@@ -338,6 +355,24 @@ package org.okapp.guieditor.view
 
             StoredFieldManager.instance.setString(Constants.SO_ANIMATION_PATH, path);
             selectedFile = new AnimationModelVO(new File(path));
+        }
+
+        private function saveFile():void
+        {
+            var state:XML = _animationStatePanel.selectedState;
+
+            for each (var timelineNode:XML in state.timeline)
+            {
+                var parent:XML = timelineNode.parent();
+                var chiltren:XMLList = parent.children();
+                delete chiltren[ timelineNode.childIndex() ];
+            }
+
+            var timelines:Vector.<XML> = _layers.toXMLList();
+            for each (var node:XML in timelines)
+                state.appendChild(node);
+
+            selectedFile.flush();
         }
 
 
@@ -383,8 +418,12 @@ package org.okapp.guieditor.view
 
         private function btnCreate_clickHandler(event:MouseEvent):void
         {
-            trace("AnimationScreen.btnSave_clickHandler();");
+            trace("AnimationScreen.btnCreate_clickHandler();");
+            var file:File = new File();
+            file.browseForSave("Choose new file location");
+            file.addEventListener(Event.SELECT, fileSave_selectHandler);
         }
+
 
         private function btnOpen_clickHandler(event:MouseEvent):void
         {
@@ -394,16 +433,17 @@ package org.okapp.guieditor.view
             file.addEventListener(Event.SELECT, file_selectHandler);
         }
 
+        private function btnSave_clickHandler(event:MouseEvent):void
+        {
+            trace("AnimationScreen.btnSave_clickHandler();");
+            saveFile();
+        }
+
         private function listTextures_doubleClickhandler(event:MouseEvent):void
         {
             var texture:AnimationTexture = listTextures.selectedItem as AnimationTexture;
 
-            var file:File = texture.file;
-
-            var img:Image = new Image();
-            img.source = texture.image;
-
-            _layers.addImage(img, file.nativePath);
+            _layers.addTexture(texture);
             _canvas.renderFrame();
             _editor.update();
         }
@@ -429,7 +469,10 @@ package org.okapp.guieditor.view
             listTextures.dataProvider = new ArrayCollection(textures);
             listTextures.selectedIndex = 0;
 
-            imgPreview.texture = textures[0];
+            if (textures.length)
+                imgPreview.texture = textures[0];
+            else
+                imgPreview.texture = null;
 
             StoredFieldManager.instance.setString(Constants.SO_ANIMATION_DIRECTORY, file.nativePath);
         }
@@ -444,6 +487,14 @@ package org.okapp.guieditor.view
         {
             var file:File = event.currentTarget as File;
             openFile(file.nativePath);
+        }
+
+        private function fileSave_selectHandler(event:Event):void
+        {
+            var sf:File = event.currentTarget as File;
+            var newFile:File = DataFile.createFile(sf, AnimationModelVO.EMPTY_FILE);
+
+            selectedFile = new AnimationModelVO(newFile);
         }
     }
 }

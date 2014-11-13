@@ -1,4 +1,4 @@
-package org.okapp.guieditor.view.controls
+package org.okapp.guieditor.view.controls.timeline
 {
     import flash.events.Event;
 
