@@ -2,6 +2,8 @@ package org.okapp.guieditor.view
 {
     import com.okapp.pirates.commands.StarlingContextCommand;
     import com.okapp.pirates.ui.controls.Canvas;
+    import com.okapp.pirates.ui.core.GUIElementDefinition;
+    import com.okapp.pirates.ui.core.GUIXMLConverter;
 
     import flash.display3D.Context3D;
     import flash.events.MouseEvent;
@@ -228,8 +230,12 @@ package org.okapp.guieditor.view
 
                 taEditor.text = selectedFile.buffer.toXMLString();
 
-                if (_preview && selectedFile)
-                    _preview.createAllElements(selectedFile.buffer);
+                if (_preview && selectedFile && starling)
+                {
+                    var definitions:Vector.<GUIElementDefinition> = GUIXMLConverter.convertGUINode(selectedFile.buffer);
+                    _preview.createAllElements(definitions);
+                }
+
             }
             else
             {
@@ -268,7 +274,9 @@ package org.okapp.guieditor.view
             if (_preview && selectedFile)
             {
                 _preview.clearAllElements();
-                _preview.createAllElements(selectedFile.buffer);
+
+                var definitions:Vector.<GUIElementDefinition> = GUIXMLConverter.convertGUINode(selectedFile.buffer);
+                _preview.createAllElements(definitions);
             }
         }
 
