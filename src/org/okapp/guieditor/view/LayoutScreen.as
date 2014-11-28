@@ -230,11 +230,7 @@ package org.okapp.guieditor.view
 
                 taEditor.text = selectedFile.buffer.toXMLString();
 
-                if (_preview && selectedFile && starling)
-                {
-                    var definitions:Vector.<GUIElementDefinition> = GUIXMLConverter.convertGUINode(selectedFile.buffer);
-                    _preview.createAllElements(definitions);
-                }
+                update();
 
             }
             else
@@ -270,13 +266,25 @@ package org.okapp.guieditor.view
             }
 
             selectedFile.update(xml);
+            update();
+        }
 
-            if (_preview && selectedFile)
+        private function update():void
+        {
+            if (_preview && selectedFile && starling)
             {
                 _preview.clearAllElements();
 
+                var xml:XML = selectedFile.buffer;
                 var definitions:Vector.<GUIElementDefinition> = GUIXMLConverter.convertGUINode(selectedFile.buffer);
                 _preview.createAllElements(definitions);
+
+                if ("@width" in xml && "@height" in xml)
+                {
+                    var w:Number = parseFloat(String(xml.@width));
+                    var h:Number = parseFloat(String(xml.@height));
+                    _preview.updateDisplayList(w, h);
+                }
             }
         }
 
