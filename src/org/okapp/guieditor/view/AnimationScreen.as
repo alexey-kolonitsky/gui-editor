@@ -285,6 +285,12 @@ package org.okapp.guieditor.view
             super.initializationComplete();
 
             var fn:String = StoredFieldManager.instance.getString(Constants.SO_ANIMATION_PATH);
+            if (fn == null)
+            {
+                createEmptyFile();
+                return;
+            }
+
             var lastEditedFile:AnimationModelVO = new AnimationModelVO(new File(fn));
             if (lastEditedFile && lastEditedFile.isValid)
             {
@@ -292,11 +298,16 @@ package org.okapp.guieditor.view
             }
             else
             {
-                var path:String = File.documentsDirectory.nativePath;
-                var file:File = DataFile.createEmptyFile(path, AnimationModelVO.FILE_NAME_PATTERN, AnimationModelVO.EMPTY_FILE);
-
-                selectedFile = new AnimationModelVO(file)
+                createEmptyFile();
             }
+        }
+
+        private function createEmptyFile():void
+        {
+            var path:String = File.documentsDirectory.nativePath;
+            var file:File = DataFile.createEmptyFile(path, AnimationModelVO.FILE_NAME_PATTERN, AnimationModelVO.EMPTY_FILE);
+
+            selectedFile = new AnimationModelVO(file);
         }
 
         override protected function commitProperties():void

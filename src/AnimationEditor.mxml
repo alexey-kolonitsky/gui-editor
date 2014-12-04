@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!--
+  Created by Alexey on 12/3/2014.
+-->
 <s:WindowedApplication
     xmlns:fx="http://ns.adobe.com/mxml/2009"
     xmlns:s="library://ns.adobe.com/flex/spark"
@@ -17,8 +20,6 @@
             import org.okapp.guieditor.view.AnimationScreen;
             import org.okapp.guieditor.view.BaseScreen;
             import org.okapp.guieditor.view.LayoutScreen;
-
-            import spark.events.IndexChangeEvent;
 
             import starling.core.Starling;
             import starling.display.Sprite;
@@ -47,20 +48,6 @@
                     currentScreen.starling = starlingStage;
             }
 
-            private function tabs_changeHandler(event:IndexChangeEvent):void
-            {
-                removeElement(currentScreen);
-
-                var key:String = listTabs.selectedItem as String;
-                if (! (key in screens) || screens[key] == null)
-                    screens[key] = createScreen(key);
-
-                StoredFieldManager.instance.setString(Constants.SO_SELECTED_SCREEN, key);
-
-                currentScreen = screens[key];
-                addElement(currentScreen);
-            }
-
             private function createScreen(key:String):BaseScreen
             {
                 var result:BaseScreen = null;
@@ -80,7 +67,7 @@
                     break;
                 }
 
-                result.left = 48;
+                result.left = 0;
                 result.top = 0;
                 result.bottom = 0;
                 result.right = 0;
@@ -110,11 +97,7 @@
 
                 super.initialize();
 
-                var key:String = sfm.getString(Constants.SO_SELECTED_SCREEN);
-                if (key != null)
-                    listTabs.selectedItem = key;
-                else
-                    key = listTabs.selectedItem;
+                var key:String = SCREEN_ANIMATION;
 
                 currentScreen = screens[key] = createScreen(key);
                 addElement(currentScreen);
@@ -122,10 +105,5 @@
         ]]>
     </fx:Script>
 
-    <s:List id="listTabs"
-        left="4" top="4" bottom="4" width="40"
-        dataProvider="{tabCollection}"
-        selectedIndex="0"
-        change="{tabs_changeHandler(event)}"/>
 
 </s:WindowedApplication>
